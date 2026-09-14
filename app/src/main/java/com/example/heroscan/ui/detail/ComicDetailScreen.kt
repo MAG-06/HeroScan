@@ -19,17 +19,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +46,9 @@ import com.example.heroscan.model.MockComics
 import com.example.heroscan.ui.theme.CodeAmber
 import com.example.heroscan.ui.theme.SectionRed
 import com.example.heroscan.ui.theme.SectionYellow
+import com.example.heroscan.ui.components.AppTopBar
+import com.example.heroscan.ui.components.PrimaryActionButton
+
 
 @Composable
 fun ComicDetailScreen(
@@ -66,7 +65,13 @@ fun ComicDetailScreen(
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                DetailTopBar(onBackClick = onBackClick)
+
+                AppTopBar(
+                    title = "DETALLE DEL CÓMIC",
+                    onBackClick = onBackClick,
+                    trailingIcon = Icons.Filled.Bookmark,
+                    trailingIconTint = MaterialTheme.colorScheme.primary
+                )
 
                 Column(
                     modifier = Modifier
@@ -142,60 +147,17 @@ fun ComicDetailScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                ScanAnotherButton(onClick = onScanAnotherClick)
+                PrimaryActionButton(
+                    icon = Icons.Filled.PhotoCamera,
+                    label = "ESCANEAR OTRO CÓMIC",
+                    onClick = onScanAnotherClick,
+                    modifier = Modifier.padding(20.dp)
+                )
             }
         }
     }
 }
 
-// barra superior con volver, titulo fijo y el boton de coleccion (todavia sin accion)
-@Composable
-private fun DetailTopBar(onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.White
-            )
-        }
-
-        Text(
-            text = "DETALLE DEL CÓMIC",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Bookmark,
-                contentDescription = "Colección",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
 
 // placeholder de la portada, todavia no hay imagen real de ningun comic,
 // esto se reemplaza por la portada real cuando se conecte la api
@@ -339,20 +301,5 @@ private fun CharacterAvatar(name: String) {
     }
 }
 
-// boton fijo abajo para volver a escanear, todavia no conecta con la camara real
-@Composable
-private fun ScanAnotherButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)
-            .height(52.dp)
-    ) {
-        Icon(imageVector = Icons.Filled.PhotoCamera, contentDescription = null, tint = Color.Black)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = "ESCANEAR OTRO CÓMIC", color = Color.Black, fontWeight = FontWeight.Bold)
-    }
-}
+
+

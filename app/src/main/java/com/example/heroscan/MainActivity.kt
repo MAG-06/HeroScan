@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.heroscan.ui.detail.ComicDetailScreen
 import com.example.heroscan.ui.home.HomeScreen
 import com.example.heroscan.ui.theme.HeroScanTheme
+import com.example.heroscan.ui.scan.CoverScanScreen
 import com.example.heroscan.ui.scan.ScanScreen
 
 class MainActivity : ComponentActivity() {
@@ -42,7 +43,8 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
         composable("home") {
             HomeScreen(
                 onScanClick = { navController.navigate("scan") },
-                onComicClick = { comicId -> navController.navigate("comicDetail/$comicId")}
+                onComicClick = { comicId -> navController.navigate("comicDetail/$comicId")},
+                onPortadaClick = { navController.navigate("coverScan") }
             )
         }
 
@@ -57,6 +59,10 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
 
         composable("scan") {
             ScanScreen(onBackClick = { navController.popBackStack() } )
+        }
+
+        composable("coverScan") {
+            CoverScanScreen(onBackClick = { navController.popBackStack() })
         }
 
     }

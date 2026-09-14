@@ -27,10 +27,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.heroscan.R
 import com.example.heroscan.ui.theme.CodeAmber
 import com.example.heroscan.ui.theme.DetectedGreen
+import com.example.heroscan.ui.components.AppTopBar
 
 @Composable
 fun ScanScreen(
@@ -64,7 +63,15 @@ fun ScanScreen(
         modifier = Modifier.fillMaxSize()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ScanTopBar(onBackClick = onBackClick)
+
+            AppTopBar(
+                title = "ESCANEAR CÓMIC",
+                onBackClick = onBackClick,
+                trailingIcon = Icons.Filled.QrCodeScanner,
+                trailingIconTint = Color.Black,
+                trailingIconBackground = MaterialTheme.colorScheme.primary
+            )
+
             CameraArea(
                 modifier = Modifier.weight(1f),
                 viewModel = viewModel
@@ -79,52 +86,6 @@ fun ScanScreen(
     }
 }
 
-@Composable
-private fun ScanTopBar(onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.White
-            )
-        }
-
-        Text(
-            text = "ESCANEAR CÓMIC",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.QrCodeScanner,
-                contentDescription = null,
-                tint = Color.Black,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun CameraArea(modifier: Modifier = Modifier, viewModel: ScanViewModel) {
