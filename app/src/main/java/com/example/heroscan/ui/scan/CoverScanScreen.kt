@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,9 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -48,9 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.heroscan.R
 import com.example.heroscan.ui.components.AppTopBar
-import com.example.heroscan.ui.components.OutlinedActionButton
+import com.example.heroscan.ui.components.CircleActionButton
 import kotlinx.coroutines.launch
 import androidx.compose.material3.SnackbarHost
+import com.example.heroscan.ui.components.Viewfinder
+import com.example.heroscan.ui.components.BottomPanel
 
 @Composable
 fun CoverScanScreen(onBackClick: () -> Unit = {}) {
@@ -179,70 +177,11 @@ private fun CoverImageArea(selectedImageUri: Uri?, modifier: Modifier = Modifier
                 )
             }
 
-            CoverViewfinder()
+            Viewfinder(showScanLine = false)
         }
     }
 }
 
-@Composable
-private fun CoverViewfinder() {
-    val cornerColor = MaterialTheme.colorScheme.primary
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val cornerLength = 30.dp.toPx()
-        val strokeWidth = 4.dp.toPx()
-        val w = size.width
-        val h = size.height
-
-        drawLine(
-            cornerColor,
-            Offset(0f, 0f),
-            Offset(cornerLength, 0f),
-            strokeWidth,
-            StrokeCap.Round
-        )
-        drawLine(
-            cornerColor,
-            Offset(0f, 0f),
-            Offset(0f, cornerLength),
-            strokeWidth,
-            StrokeCap.Round
-        )
-
-        drawLine(
-            cornerColor,
-            Offset(w, 0f),
-            Offset(w - cornerLength, 0f),
-            strokeWidth,
-            StrokeCap.Round
-        )
-        drawLine(cornerColor, Offset(w, 0f), Offset(w, cornerLength), strokeWidth, StrokeCap.Round)
-
-        drawLine(cornerColor, Offset(0f, h), Offset(cornerLength, h), strokeWidth, StrokeCap.Round)
-        drawLine(
-            cornerColor,
-            Offset(0f, h),
-            Offset(0f, h - cornerLength),
-            strokeWidth,
-            StrokeCap.Round
-        )
-
-        drawLine(
-            cornerColor,
-            Offset(w, h),
-            Offset(w - cornerLength, h),
-            strokeWidth,
-            StrokeCap.Round
-        )
-        drawLine(
-            cornerColor,
-            Offset(w, h),
-            Offset(w, h - cornerLength),
-            strokeWidth,
-            StrokeCap.Round
-        )
-    }
-}
 
 @Composable
 private fun CoverBottomPanel(
@@ -250,14 +189,7 @@ private fun CoverBottomPanel(
     onGalleryClick: () -> Unit,
     onSubmitClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    BottomPanel {
         Text(
             text = "SUBE LA IMAGEN",
             color = Color.White,
@@ -289,7 +221,7 @@ private fun CoverBottomPanel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedActionButton(
+        CircleActionButton(
             icon = Icons.Filled.Smartphone,
             label = "GALERIA",
             onClick = onGalleryClick

@@ -32,6 +32,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+
 
 // Botón circular de "volver" reutilizado en Scan y en Detalle del cómic
 @Composable
@@ -124,11 +130,13 @@ fun PrimaryActionButton(
 }
 
 @Composable
-fun OutlinedActionButton(
+fun CircleActionButton(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
-    iconColor: Color = MaterialTheme.colorScheme.primary
+    filled: Boolean = false,
+    iconColor: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -137,7 +145,14 @@ fun OutlinedActionButton(
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .border(width = 2.dp, color = iconColor, shape = CircleShape),
+                .clip(CircleShape)
+                .then(
+                    if (filled) {
+                        Modifier.background(backgroundColor)
+                    } else {
+                        Modifier.border(width = 2.dp, color = iconColor, shape = CircleShape)
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -155,4 +170,103 @@ fun OutlinedActionButton(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+@Composable
+fun Viewfinder(showScanLine: Boolean = false, modifier: Modifier = Modifier) {
+    val cornerColor = MaterialTheme.colorScheme.primary
+
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val cornerLength = 30.dp.toPx()
+        val strokeWidth = 4.dp.toPx()
+        val w = size.width
+        val h = size.height
+
+        drawLine(
+            cornerColor,
+            Offset(0f, 0f),
+            Offset(cornerLength, 0f),
+            strokeWidth,
+            StrokeCap.Round
+        )
+        drawLine(
+            cornerColor,
+            Offset(0f, 0f),
+            Offset(0f, cornerLength),
+            strokeWidth,
+            StrokeCap.Round
+        )
+
+        drawLine(
+            cornerColor,
+            Offset(w, 0f),
+            Offset(w - cornerLength, 0f),
+            strokeWidth,
+            StrokeCap.Round
+        )
+        drawLine(
+            cornerColor,
+            Offset(w, 0f),
+            Offset(w, cornerLength),
+            strokeWidth,
+            StrokeCap.Round
+        )
+
+        drawLine(
+            cornerColor,
+            Offset(0f, h),
+            Offset(cornerLength, h),
+            strokeWidth,
+            StrokeCap.Round
+        )
+        drawLine(
+            cornerColor,
+            Offset(0f, h),
+            Offset(0f, h - cornerLength),
+            strokeWidth,
+            StrokeCap.Round
+        )
+
+        drawLine(
+            cornerColor,
+            Offset(w, h),
+            Offset(w - cornerLength, h),
+            strokeWidth,
+            StrokeCap.Round
+        )
+        drawLine(
+            cornerColor,
+            Offset(w, h),
+            Offset(w, h - cornerLength),
+            strokeWidth,
+            StrokeCap.Round
+        )
+
+
+        // La linea de escaneo: solo si showScanLine es true
+        if (showScanLine) {
+            drawLine(
+                color = cornerColor.copy(alpha = 0.7f),
+                start = Offset(0f, h / 2),
+                end = Offset(w, h / 2),
+                strokeWidth = 2f,
+                cap = StrokeCap.Round
+            )
+        }
+    }
+}
+
+
+@Composable
+fun BottomPanel(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        content = content
+    )
 }
