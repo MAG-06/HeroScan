@@ -22,8 +22,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -57,13 +55,13 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.fillMaxSize
+import com.example.heroscan.ui.components.PrimaryActionButton
 
 @Composable
 fun HomeScreen(
     onScanClick: () -> Unit = {},
     onComicClick: (String) -> Unit = {},
-    onSearchByTextClick: () -> Unit = {},
-    onSearchByCoverClick: () -> Unit = {}
+    onPortadaClick: () -> Unit = {}
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -120,7 +118,8 @@ fun HomeScreen(
                             iconColor = MaterialTheme.colorScheme.primary,
                             title = "BUSCAR POR TEXTO",
                             description = "Busca por título, personaje o editorial.",
-                            onClick = { onComicClick("2") }
+                            onClick = { onComicClick("2") },
+                            true
                         )
                         SearchOptionCard(
                             modifier = Modifier.weight(1f),
@@ -128,7 +127,8 @@ fun HomeScreen(
                             iconColor = MaterialTheme.colorScheme.secondary,
                             title = "BUSCAR POR PORTADA",
                             description = "Usa una foto de la portada para encontrar el cómic.",
-                            onClick = requestCameraPermission
+                            onClick = onPortadaClick,
+                            true
                         )
                     }
 
@@ -257,22 +257,11 @@ private fun ScanCard(onScanClick: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(50.dp))
 
-                Button(
-                    onClick = onScanClick,
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PhotoCamera,
-                        contentDescription = null,
-                        tint = Color.Black
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "ESCANEAR AHORA", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
+                PrimaryActionButton(
+                    icon = Icons.Filled.PhotoCamera,
+                    label = "ESCANEAR AHORA",
+                    onClick = onScanClick
+                )
             }
         }
     }
@@ -285,14 +274,18 @@ private fun SearchOptionCard(
     iconColor: Color,
     title: String,
     description: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface, disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(16.dp),
+        enabled = enabled,
         onClick = onClick
     ) {
+        val contentColor = if (enabled) iconColor else MaterialTheme.colorScheme.onSurfaceVariant
+
         Column(modifier = Modifier.padding(14.dp)) {
             Box(
                 modifier = Modifier
@@ -301,10 +294,10 @@ private fun SearchOptionCard(
                     .background(iconColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+                Icon(imageVector = icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = title, color = if (enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
