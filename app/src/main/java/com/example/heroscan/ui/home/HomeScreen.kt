@@ -61,7 +61,8 @@ import com.example.heroscan.ui.components.PrimaryActionButton
 fun HomeScreen(
     onScanClick: () -> Unit = {},
     onComicClick: (String) -> Unit = {},
-    onPortadaClick: () -> Unit = {}
+    onPortadaClick: () -> Unit = {},
+    onTextoClick: () -> Unit = {}
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -118,7 +119,7 @@ fun HomeScreen(
                             iconColor = MaterialTheme.colorScheme.primary,
                             title = "BUSCAR POR TEXTO",
                             description = "Busca por título, personaje o editorial.",
-                            onClick = { onComicClick("2") },
+                            onClick =  onTextoClick ,
                             true
                         )
                         SearchOptionCard(
