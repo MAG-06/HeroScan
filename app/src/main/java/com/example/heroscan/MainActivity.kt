@@ -18,6 +18,7 @@ import com.example.heroscan.ui.home.HomeScreen
 import com.example.heroscan.ui.theme.HeroScanTheme
 import com.example.heroscan.ui.scan.CoverScanScreen
 import com.example.heroscan.ui.scan.ScanScreen
+import com.example.heroscan.ui.search.SearchScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +45,8 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
             HomeScreen(
                 onScanClick = { navController.navigate("scan") },
                 onComicClick = { comicId -> navController.navigate("comicDetail/$comicId")},
-                onPortadaClick = { navController.navigate("coverScan") }
+                onPortadaClick = { navController.navigate("coverScan") },
+                onTextoClick = { navController.navigate("search") }
             )
         }
 
@@ -63,6 +65,10 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
 
         composable("coverScan") {
             CoverScanScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable("search") {
+            SearchScreen(onBackClick = { navController.popBackStack() })
         }
 
     }
