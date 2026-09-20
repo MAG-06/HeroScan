@@ -1,6 +1,7 @@
 package com.example.heroscan.ui.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,78 +31,82 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.heroscan.model.Comic
-import com.example.heroscan.model.MockComics
+import com.example.heroscan.model.ComicCharacter
 import com.example.heroscan.ui.theme.CodeAmber
 import com.example.heroscan.ui.theme.SectionRed
 import com.example.heroscan.ui.theme.SectionYellow
 import com.example.heroscan.ui.components.AppTopBar
 import com.example.heroscan.ui.components.PrimaryActionButton
 
-
 @Composable
 fun ComicDetailScreen(
-    comicId: String,
+    comic: Comic,
     onBackClick: () -> Unit = {},
     onScanAnotherClick: () -> Unit = {}
 ) {
-    val comic = MockComics.getById(comicId)
-
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        if (comic == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "No se encontró el cómic.", color = Color.White)
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-                AppTopBar(
-                    title = "DETALLE DEL CÓMIC",
-                    onBackClick = onBackClick,
-                    trailingIcon = Icons.Filled.Bookmark,
-                    trailingIconTint = MaterialTheme.colorScheme.primary
+            AppTopBar(
+                title = "DETALLE DEL CÓMIC",
+                onBackClick = onBackClick,
+                trailingIcon = Icons.Filled.Bookmark,
+                trailingIconTint = MaterialTheme.colorScheme.primary
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+            ) {
+                ComicCover(coverUrl = comic.coverUrl)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ComicTitleBlock(
+                    title = comic.title,
+                    issueNumber = comic.issueNumber,
+                    publisher = comic.publisher,
+                    releaseDate = comic.releaseDate
                 )
 
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                InfoSection(
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    iconColor = MaterialTheme.colorScheme.primary,
+                    title = "SOBRE ESTE CÓMIC"
                 ) {
-                    ComicCover()
+                    Text(
+                        text = comic.description,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                    ComicTitleBlock(comic)
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    InfoSection(
-                        icon = Icons.AutoMirrored.Filled.MenuBook,
-                        iconColor = MaterialTheme.colorScheme.primary,
-                        title = "SOBRE ESTE CÓMIC"
-                    ) {
-                        Text(
-                            text = comic.description,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            lineHeight = 19.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
+                if (comic.characters.isNotEmpty()) {
                     InfoSection(
                         icon = Icons.Filled.Star,
                         iconColor = SectionYellow,
@@ -111,87 +116,91 @@ fun ComicDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.horizontalScroll(rememberScrollState())
                         ) {
-                            comic.characters.forEach { name ->
-                                CharacterAvatar(name = name)
+                            comic.characters.forEach { character ->
+                                CharacterAvatar(character = character)
                             }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    InfoSection(
-                        icon = Icons.Filled.Edit,
-                        iconColor = SectionRed,
-                        title = "CREADORES"
-                    ) {
-                        InfoCard {
-                            comic.creators.forEach { creator ->
-                                LabelValueRow(label = creator.role, value = creator.name, valueColor = Color.White)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    InfoSection(
-                        icon = Icons.Filled.Sell,
-                        iconColor = MaterialTheme.colorScheme.secondary,
-                        title = "IDENTIFICACIÓN"
-                    ) {
-                        InfoCard {
-                            LabelValueRow(label = "Código de barra", value = comic.barcode, valueColor = CodeAmber)
-                            LabelValueRow(label = "Tipo de escaneo", value = comic.scanType, valueColor = CodeAmber)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                PrimaryActionButton(
-                    icon = Icons.Filled.PhotoCamera,
-                    label = "ESCANEAR OTRO CÓMIC",
-                    onClick = onScanAnotherClick,
-                    modifier = Modifier.padding(20.dp)
-                )
+                if (comic.creators.isNotEmpty()) {
+                    CreditsSection(credits = comic.creators)
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                InfoSection(
+                    icon = Icons.Filled.Sell,
+                    iconColor = MaterialTheme.colorScheme.secondary,
+                    title = "IDENTIFICACIÓN"
+                ) {
+                    InfoCard {
+                        LabelValueRow("Código", comic.barcode, CodeAmber)
+                        LabelValueRow("Tipo", comic.scanType, CodeAmber)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
             }
+
+            PrimaryActionButton(
+                icon = Icons.Filled.PhotoCamera,
+                label = "ESCANEAR OTRO CÓMIC",
+                onClick = onScanAnotherClick,
+                modifier = Modifier.padding(20.dp)
+            )
         }
     }
 }
 
-
-// placeholder de la portada, todavia no hay imagen real de ningun comic,
-// esto se reemplaza por la portada real cuando se conecte la api
 @Composable
-private fun ComicCover() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(0.72f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, Color(0xFF1A1830)))
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(64.dp)
+private fun ComicCover(coverUrl: String) {
+    if (coverUrl.isNotEmpty()) {
+        AsyncImage(
+            model = coverUrl,
+            contentDescription = "Portada del cómic",
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f)
+                .clip(RoundedCornerShape(20.dp)),
+            contentScale = ContentScale.Crop
         )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f)
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, Color(0xFF1A1830)))
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(64.dp)
+            )
+        }
     }
 }
 
-// titulo, numero de edicion en la insignia, y editorial + fecha debajo
 @Composable
-private fun ComicTitleBlock(comic: Comic) {
+private fun ComicTitleBlock(
+    title: String,
+    issueNumber: String,
+    publisher: String,
+    releaseDate: String
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top
     ) {
         Text(
-            text = comic.title,
+            text = title,
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -207,7 +216,7 @@ private fun ComicTitleBlock(comic: Comic) {
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
             Text(
-                text = comic.issueNumber,
+                text = "#$issueNumber",
                 color = Color.Black,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold
@@ -216,13 +225,46 @@ private fun ComicTitleBlock(comic: Comic) {
     }
     Spacer(modifier = Modifier.height(4.dp))
     Text(
-        text = "${comic.publisher} • ${comic.releaseDate}",
+        text = "$publisher · $releaseDate",
         color = MaterialTheme.colorScheme.primary,
         fontSize = 13.sp
     )
 }
 
-// bloque reutilizable para cada seccion: icono + titulo del color del icono, y el contenido debajo
+@Composable
+private fun CreditsSection(credits: List<String>) {
+    var expanded by remember { mutableStateOf(false) }
+
+    InfoSection(
+        icon = Icons.Filled.Edit,
+        iconColor = SectionRed,
+        title = "CRÉDITOS"
+    ) {
+        InfoCard {
+            val visibleCredits = if (expanded) credits else credits.take(3)
+
+            visibleCredits.forEach { name ->
+                Text(
+                    text = name,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (credits.size > 3) {
+                Text(
+                    text = if (expanded) "Ver menos" else "Ver todos (${credits.size})",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { expanded = !expanded }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun InfoSection(
     icon: ImageVector,
@@ -232,7 +274,12 @@ private fun InfoSection(
 ) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = title,
@@ -247,7 +294,6 @@ private fun InfoSection(
     }
 }
 
-// tarjeta oscura reutilizada por creadores e identificacion
 @Composable
 private fun InfoCard(content: @Composable () -> Unit) {
     Column(
@@ -262,7 +308,6 @@ private fun InfoCard(content: @Composable () -> Unit) {
     }
 }
 
-// una fila etiqueta-valor, usada tanto en creadores como en identificacion
 @Composable
 private fun LabelValueRow(label: String, value: String, valueColor: Color) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -271,27 +316,37 @@ private fun LabelValueRow(label: String, value: String, valueColor: Color) {
     }
 }
 
-// circulo con la inicial del personaje, todavia no hay imagenes reales de personajes
 @Composable
-private fun CharacterAvatar(name: String) {
+private fun CharacterAvatar(character: ComicCharacter) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(64.dp)) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = name.take(1),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+        if (character.imageUrl.isNotEmpty()) {
+            AsyncImage(
+                model = character.imageUrl,
+                contentDescription = character.name,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = character.name.take(1),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = name,
+            text = character.name,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 11.sp,
             maxLines = 1,
@@ -300,6 +355,3 @@ private fun CharacterAvatar(name: String) {
         )
     }
 }
-
-
-

@@ -1,4 +1,4 @@
-package com.example.heroscan.ui.scan
+package com.example.heroscan.viewmodel
 
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy

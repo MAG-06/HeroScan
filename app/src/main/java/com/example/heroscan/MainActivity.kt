@@ -13,12 +13,17 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.heroscan.ui.detail.ComicDetailScreen
+import com.example.heroscan.model.Comic
 import com.example.heroscan.ui.home.HomeScreen
 import com.example.heroscan.ui.theme.HeroScanTheme
 import com.example.heroscan.ui.scan.CoverScanScreen
 import com.example.heroscan.ui.scan.ScanScreen
 import com.example.heroscan.ui.search.SearchScreen
+import com.example.heroscan.ui.detail.ComicDetailScreen
+import com.google.gson.Gson
+import java.net.URLEncoder
+import java.net.URLDecoder
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +43,8 @@ class MainActivity : ComponentActivity() {
 fun HeroScanNavHost(modifier: Modifier = Modifier) {
 
     val navController: NavHostController = rememberNavController()
+    val gson = Gson()
+
 
     NavHost(navController = navController, startDestination = "home", modifier = modifier) {
 
@@ -50,14 +57,7 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
             )
         }
 
-        composable("comicDetail/{comicId}") { backStackEntry ->
-            val comicId = backStackEntry.arguments?.getString("comicId") ?: ""
-            ComicDetailScreen(
-                comicId = comicId,
-                onBackClick = { navController.popBackStack() },
-                onScanAnotherClick = { navController.navigate("scan") }
-            )
-        }
+
 
         composable("scan") {
             ScanScreen(onBackClick = { navController.popBackStack() } )
@@ -68,8 +68,26 @@ fun HeroScanNavHost(modifier: Modifier = Modifier) {
         }
 
         composable("search") {
-            SearchScreen(onBackClick = { navController.popBackStack() })
+            SearchScreen(
+                onBackClick = { navController.popBackStack() },
+                onComicFound = { comic ->
+                    val comicJson = URLEncoder.encode(gson.toJson(comic), "UTF-8")
+                    navController.navigate("comicDetail/$comicJson")
+                }
+            )
         }
 
+        composable("comicDetail/{comicJson}") { backStackEntry ->
+            val comicJson = URLDecoder.decode(
+                backStackEntry.arguments?.getString("comicJson") ?: "",
+                "UTF-8"
+            )
+            val comic = gson.fromJson(comicJson, Comic::class.java)
+
+            ComicDetailScreen(
+                comic = comic,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     }
 }
