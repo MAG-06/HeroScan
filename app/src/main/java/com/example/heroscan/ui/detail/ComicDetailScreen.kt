@@ -144,12 +144,12 @@ fun ComicDetailScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            PrimaryActionButton(
-                icon = Icons.Filled.PhotoCamera,
-                label = "ESCANEAR OTRO CÓMIC",
-                onClick = onScanAnotherClick,
-                modifier = Modifier.padding(20.dp)
-            )
+            //PrimaryActionButton(
+              //  icon = Icons.Filled.PhotoCamera,
+               // label = "ESCANEAR OTRO CÓMIC",
+               // onClick = onScanAnotherClick,
+               // modifier = Modifier.padding(20.dp)
+            //)
         }
     }
 }

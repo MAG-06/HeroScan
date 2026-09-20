@@ -4,10 +4,13 @@ import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicCharacter
 import com.example.heroscan.network.RetrofitClient
 import com.example.heroscan.network.mapper.toComic
+import com.example.heroscan.network.api.MetronApi
+import com.example.heroscan.network.api.TranslationApi
 
-class SearchRepository {
 
-    private val metronApi = RetrofitClient.metronApi
+class SearchRepository(private val metronApi: MetronApi, private val translationApi: TranslationApi) {
+
+
 
     suspend fun searchByCode(code: String, scanType: String): Comic {
         return when (scanType) {
@@ -16,8 +19,6 @@ class SearchRepository {
             else      -> throw Exception("Tipo de código no soportado aún")
         }
     }
-
-    private val translationApi = RetrofitClient.translationApi
 
     private suspend fun searchByUpc(upc: String, scanType: String): Comic {
         val cleanUpc = upc.take(12)

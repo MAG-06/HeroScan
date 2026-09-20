@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.Comic
 import com.example.heroscan.repository.SearchRepository
 import kotlinx.coroutines.launch
+import com.example.heroscan.network.RetrofitClient
 
 sealed interface SearchUiState {
     object Idle : SearchUiState
@@ -18,7 +19,7 @@ sealed interface SearchUiState {
 
 class GeneralSearchViewModel : ViewModel() {
 
-    private val repository = SearchRepository()
+    private val repository = SearchRepository(RetrofitClient.metronApi, RetrofitClient.translationApi)
 
     var uiState: SearchUiState by mutableStateOf(SearchUiState.Idle)
         private set
