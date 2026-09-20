@@ -59,4 +59,8 @@ dependencies {
     implementation(libs.camera.view) // dependencias de la camara
     implementation(libs.mlkit.barcode.scanning) // dependencias de mlkit
     implementation(libs.androidx.lifecycle.viewmodel.compose) // dependencias de viewModel estructura MVVM
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0") // dependencias de retrofit para la conexion de la apii
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // OkHttp (para el interceptor de autenticación de Metron)
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }

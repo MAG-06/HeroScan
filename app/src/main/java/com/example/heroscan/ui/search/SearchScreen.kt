@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,13 +45,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.heroscan.ui.components.AppTopBar
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import com.example.heroscan.ui.theme.CodeAmber
+import com.example.heroscan.model.Comic
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.heroscan.viewmodel.SearchViewModel
+import com.example.heroscan.viewmodel.GeneralSearchViewModel
+import com.example.heroscan.viewmodel.SearchUiState
 
 @Composable
-fun SearchScreen(onBackClick: () -> Unit = {}) {
+fun SearchScreen(
+    onBackClick: () -> Unit = {},
+    onComicFound: (Comic) -> Unit = {},
+    viewModelSearch: SearchViewModel = viewModel(),
+    viewModelGeneral: GeneralSearchViewModel = viewModel()
+) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("TODO") }
 
     val filters = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
+    val uiState = viewModelGeneral.uiState
+
+    // Cuando llega Success, navega a ComicDetailScreen
+    LaunchedEffect(uiState) {
+        if (uiState is SearchUiState.Success) {
+            onComicFound((uiState as SearchUiState.Success).comic)
+            viewModelGeneral.resetState()
+        }
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -69,7 +94,13 @@ fun SearchScreen(onBackClick: () -> Unit = {}) {
 
             SearchTextField(
                 query = searchQuery,
-                onQueryChange = { searchQuery = it }
+                onQueryChange = { searchQuery = it },
+                onSearch = {
+                    val tipo = viewModelSearch.clasificarCodigoTexto(searchQuery)
+                    if (tipo != "Desconocido") {
+                        viewModelGeneral.searchComic(searchQuery, tipo)
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -90,7 +121,27 @@ fun SearchScreen(onBackClick: () -> Unit = {}) {
                 }
             }
 
-            EmptySearchContent(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Observar el estado de la búsqueda
+            when (uiState) {
+                is SearchUiState.Idle -> {
+                    EmptySearchContent(modifier = Modifier.weight(1f))
+                }
+                is SearchUiState.Loading -> {
+                    LoadingContent(modifier = Modifier.weight(1f))
+                }
+                is SearchUiState.Error -> {
+                    ErrorContent(
+                        message = uiState.message,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                is SearchUiState.Success -> {
+                    // No muestra nada, el LaunchedEffect ya navega
+                }
+            }
+
         }
     }
 }
@@ -98,11 +149,14 @@ fun SearchScreen(onBackClick: () -> Unit = {}) {
 @Composable
 private fun SearchTextField(
     query: String,
-    onQueryChange: (String) -> Unit
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit
 ) {
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
         placeholder = {
             Text(
                 text = "Busca por título, personaje o código...",
@@ -236,6 +290,52 @@ private fun EmptySearchContent(modifier: Modifier = Modifier) {
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             lineHeight = 18.sp
+        )
+    }
+}
+
+@Composable
+private fun LoadingContent(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Buscando cómic...",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "No se encontró el cómic",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center
         )
     }
 }

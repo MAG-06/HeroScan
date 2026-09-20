@@ -49,6 +49,7 @@ import com.example.heroscan.ui.components.AppTopBar
 import com.example.heroscan.ui.components.Viewfinder
 import com.example.heroscan.ui.components.CircleActionButton
 import com.example.heroscan.ui.components.BottomPanel
+import com.example.heroscan.viewmodel.ScanViewModel
 
 @Composable
 fun ScanScreen(
