@@ -1,5 +1,8 @@
 package com.example.heroscan.ui.search
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.example.heroscan.ui.components.AppTopBar
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import com.example.heroscan.ui.theme.CodeAmber
 import com.example.heroscan.model.Comic
@@ -68,10 +72,21 @@ fun SearchScreen(
     val filters = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
     val uiState = viewModelGeneral.uiState
 
+    // Dentro del Composable SearchScreen, antes del LaunchedEffect
+    val context = LocalContext.current
+
     // Cuando llega Success, navega a ComicDetailScreen
     LaunchedEffect(uiState) {
         if (uiState is SearchUiState.Success) {
-            onComicFound((uiState as SearchUiState.Success).comic)
+            // Vibrar el celular
+            val vibrator = context.getSystemService(Vibrator::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                vibrator?.vibrate(200)
+            }
+
+            onComicFound(uiState.comic)
             viewModelGeneral.resetState()
         }
     }
