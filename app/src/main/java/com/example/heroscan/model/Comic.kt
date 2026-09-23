@@ -1,5 +1,6 @@
 package com.example.heroscan.model
 
+// Modelo principal del cómic que usa la app para mostrar su información en pantalla.
 data class Comic(
     val id: String,
     val title: String,

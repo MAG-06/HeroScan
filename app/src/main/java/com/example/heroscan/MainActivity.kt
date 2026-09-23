@@ -24,7 +24,7 @@ import com.google.gson.Gson
 import java.net.URLEncoder
 import java.net.URLDecoder
 
-
+// Punto de entrada de la app define el NavHost con las rutas: home, scan, coverScan, search y comicDetail.
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

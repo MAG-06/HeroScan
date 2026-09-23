@@ -15,6 +15,7 @@ import java.util.concurrent.Executors
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import androidx.camera.core.Camera
 
+// Controla la cámara (linterna) y analiza cada frame con ML Kit para detectar códigos de barras.
 class ScanViewModel : ViewModel() {
 
     var detectedCode by mutableStateOf<String?>(null)

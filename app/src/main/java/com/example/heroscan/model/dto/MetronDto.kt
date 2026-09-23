@@ -1,5 +1,7 @@
 package com.example.heroscan.model.dto
 
+// DTOs que reflejan el JSON de la API de Metron (búsqueda por UPC, detalle del cómic y personajes).
+
 // === LISTA (paso 1: buscar por UPC) ===
 
 data class MetronListResponse(
@@ -8,7 +10,12 @@ data class MetronListResponse(
 )
 
 data class MetronIssueListItem(
-    val id: Int
+    val id: Int,
+    val series: MetronSeriesSummary,
+    val number: String,
+    val cover_date: String?,
+    val image: String?,
+    val store_date: String?
 )
 
 // === DETALLE (paso 2: obtener info completa) ===

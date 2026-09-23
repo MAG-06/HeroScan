@@ -50,6 +50,8 @@ import androidx.compose.material3.SnackbarHost
 import com.example.heroscan.ui.components.Viewfinder
 import com.example.heroscan.ui.components.BottomPanel
 
+
+// Pantalla para escanear la portada del cómic a partir de una imagen seleccionada.
 @Composable
 fun CoverScanScreen(onBackClick: () -> Unit = {}) {
 

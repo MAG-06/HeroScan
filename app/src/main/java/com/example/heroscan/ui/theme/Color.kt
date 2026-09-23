@@ -2,6 +2,7 @@ package com.example.heroscan.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// Paleta de colores de la app (tema oscuro con acentos cian y magenta).
 val Background = Color(0xFF0A0E17)
 val Surface = Color(0xFF12141F)
 val Cyan = Color(0xFF22E1FF)
