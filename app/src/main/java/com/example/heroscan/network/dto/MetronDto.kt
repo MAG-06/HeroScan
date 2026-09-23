@@ -1,17 +1,18 @@
-package com.example.heroscan.model.dto
+package com.example.heroscan.network.dto
 
 // DTOs que reflejan el JSON de la API de Metron (búsqueda por UPC, detalle del cómic y personajes).
+// Los nombres de los campos se dejan en inglés porque deben coincidir exactamente con las claves del JSON.
 
 // === LISTA (paso 1: buscar por UPC) ===
 
-data class MetronListResponse(
+data class RespuestaListaMetron(
     val count: Int,
-    val results: List<MetronIssueListItem>
+    val results: List<ComicListaMetron>
 )
 
-data class MetronIssueListItem(
+data class ComicListaMetron(
     val id: Int,
-    val series: MetronSeriesSummary,
+    val series: SerieMetron,
     val number: String,
     val cover_date: String?,
     val image: String?,
@@ -20,37 +21,36 @@ data class MetronIssueListItem(
 
 // === DETALLE (paso 2: obtener info completa) ===
 
-data class MetronIssueDetail(
+data class DetalleComicMetron(
     val id: Int,
-    val publisher: MetronReference,
-    val series: MetronSeriesSummary,
+    val publisher: ReferenciaMetron,
+    val series: SerieMetron,
     val number: String,
     val cover_date: String?,
     val desc: String?,
     val image: String?,
     val upc: String?,
-    val credits: List<MetronCredit>,
-    val characters: List<MetronCharacter>
+    val credits: List<CreditoMetron>,
+    val characters: List<PersonajeMetron>
 )
 
-data class MetronReference(
+data class ReferenciaMetron(
     val id: Int,
     val name: String
 )
 
-data class MetronSeriesSummary(
+data class SerieMetron(
     val id: Int,
     val name: String
 )
 
-data class MetronCredit(
+data class CreditoMetron(
     val id: Int,
     val creator: String
 )
 
-data class MetronCharacter(
+data class PersonajeMetron(
     val id: Int,
     val name: String,
     val image: String?
 )
-

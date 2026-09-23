@@ -1,5 +1,9 @@
 package com.example.heroscan.ui.home
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -7,14 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CenterFocusStrong
@@ -29,61 +35,57 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import com.example.heroscan.R
-import androidx.compose.foundation.layout.WindowInsets
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import com.example.heroscan.ui.components.BotonAccionPrincipal
+import com.example.heroscan.ui.theme.CapaOscura
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.layout.fillMaxSize
-import com.example.heroscan.ui.components.PrimaryActionButton
 
+// Pantalla principal: permite ir a escanear (pidiendo antes el permiso de cámara) o a las otras formas de búsqueda.
 @Composable
-fun HomeScreen(
-    onScanClick: () -> Unit = {},
-    onComicClick: (String) -> Unit = {},
-    onPortadaClick: () -> Unit = {},
-    onTextoClick: () -> Unit = {}
+fun PantallaInicio(
+    alEscanear: () -> Unit = {},
+    alBuscarPorPortada: () -> Unit = {},
+    alBuscarPorTexto: () -> Unit = {}
 ) {
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val estadoSnackbar = remember { SnackbarHostState() }
+    val alcanceCorrutina = rememberCoroutineScope()
 
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
-
-        isGranted ->
-        if (isGranted) {
-            onScanClick()
+    // Pide el permiso de cámara: si lo conceden va a escanear, si no muestra un aviso
+    val solicitudPermisoCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { permisoConcedido ->
+        if (permisoConcedido) {
+            alEscanear()
         } else {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
+            alcanceCorrutina.launch {
+                estadoSnackbar.showSnackbar(
                     "Se necesita permiso de cámara para escanear cómics"
                 )
             }
         }
     }
 
-    val requestCameraPermission: () -> Unit = {
-        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+    val pedirPermisoCamara: () -> Unit = {
+        solicitudPermisoCamara.launch(Manifest.permission.CAMERA)
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
@@ -93,12 +95,12 @@ fun HomeScreen(
             Column {
                 Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp)) {
 
-                    HomeHeader()
+                    EncabezadoInicio()
                     Spacer(modifier = Modifier.height(20.dp))
-                    HomeTitleBlock()
+                    BloqueTituloInicio()
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    ScanCard(requestCameraPermission)
+                    TarjetaEscaneo(alEscanear = pedirPermisoCamara)
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
@@ -113,41 +115,40 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        SearchOptionCard(
+                        TarjetaOpcionBusqueda(
                             modifier = Modifier.weight(1f),
-                            icon = Icons.Filled.Search,
-                            iconColor = MaterialTheme.colorScheme.primary,
-                            title = "BUSCAR POR TEXTO",
-                            description = "Busca por título, personaje o editorial.",
-                            onClick =  onTextoClick ,
-                            true
+                            icono = Icons.Filled.Search,
+                            colorIcono = MaterialTheme.colorScheme.primary,
+                            titulo = "BUSCAR POR TEXTO",
+                            descripcion = "Busca por título, personaje o editorial.",
+                            alPulsar = alBuscarPorTexto
                         )
-                        SearchOptionCard(
+                        TarjetaOpcionBusqueda(
                             modifier = Modifier.weight(1f),
-                            icon = Icons.Filled.Image,
-                            iconColor = MaterialTheme.colorScheme.secondary,
-                            title = "BUSCAR POR PORTADA",
-                            description = "Usa una foto de la portada para encontrar el cómic.",
-                            onClick = onPortadaClick,
-                            true
+                            icono = Icons.Filled.Image,
+                            colorIcono = MaterialTheme.colorScheme.secondary,
+                            titulo = "BUSCAR POR PORTADA",
+                            descripcion = "Usa una foto de la portada para encontrar el cómic.",
+                            alPulsar = alBuscarPorPortada
                         )
                     }
 
                 }
 
-                HomeBottomNavBar(onScanClick = requestCameraPermission)
+                BarraNavegacionInferior(alEscanear = pedirPermisoCamara)
             }
 
             SnackbarHost(
-                hostState = snackbarHostState,
+                hostState = estadoSnackbar,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 }
 
+// Logo de la app ("HERO" + "SCAN") en la parte superior.
 @Composable
-private fun HomeHeader() {
+private fun EncabezadoInicio() {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -177,8 +178,9 @@ private fun HomeHeader() {
     }
 }
 
+// Título grande y subtítulo de bienvenida.
 @Composable
-private fun HomeTitleBlock() {
+private fun BloqueTituloInicio() {
     Text(
         text = "¡ENCUENTRA TU PRÓXIMO CÓMIC!",
         color = Color.White,
@@ -194,8 +196,9 @@ private fun HomeTitleBlock() {
     )
 }
 
+// Tarjeta principal con imagen de fondo y el botón "ESCANEAR AHORA".
 @Composable
-private fun ScanCard(onScanClick: () -> Unit) {
+private fun TarjetaEscaneo(alEscanear: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -214,11 +217,11 @@ private fun ScanCard(onScanClick: () -> Unit) {
             modifier = Modifier.matchParentSize()
         )
 
-        // Capa 2: oscurecido semitransparente para legibilidad
+        // Capa 2: oscurecido semitransparente para que se lea el texto
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(Color(0x73121826))
+                .background(CapaOscura)
         )
 
         // Capa 3: todo el contenido (ícono, textos, botón), con el margen interno de 20dp
@@ -258,55 +261,57 @@ private fun ScanCard(onScanClick: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(50.dp))
 
-                PrimaryActionButton(
-                    icon = Icons.Filled.PhotoCamera,
-                    label = "ESCANEAR AHORA",
-                    onClick = onScanClick
+                BotonAccionPrincipal(
+                    icono = Icons.Filled.PhotoCamera,
+                    texto = "ESCANEAR AHORA",
+                    alPulsar = alEscanear
                 )
             }
         }
     }
 }
 
+// Tarjeta pequeña para una forma alternativa de búsqueda (por texto o por portada).
 @Composable
-private fun SearchOptionCard(
+private fun TarjetaOpcionBusqueda(
     modifier: Modifier = Modifier,
-    icon: ImageVector,
-    iconColor: Color,
-    title: String,
-    description: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true
+    icono: ImageVector,
+    colorIcono: Color,
+    titulo: String,
+    descripcion: String,
+    alPulsar: () -> Unit,
+    habilitada: Boolean = true
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface, disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(16.dp),
-        enabled = enabled,
-        onClick = onClick
+        enabled = habilitada,
+        onClick = alPulsar
     ) {
-        val contentColor = if (enabled) iconColor else MaterialTheme.colorScheme.onSurfaceVariant
+        val colorContenido = if (habilitada) colorIcono else MaterialTheme.colorScheme.onSurfaceVariant
 
         Column(modifier = Modifier.padding(14.dp)) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(iconColor.copy(alpha = 0.15f)),
+                    .background(colorIcono.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(18.dp))
+                Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = title, color = if (enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
     }
 }
 
+// Barra de navegación inferior (Inicio, Escanear, Búsqueda).
 @Composable
-private fun HomeBottomNavBar(onScanClick: () -> Unit = {}) {
+private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}) {
 
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
         NavigationBarItem(
@@ -324,7 +329,7 @@ private fun HomeBottomNavBar(onScanClick: () -> Unit = {}) {
         )
         NavigationBarItem(
             selected = false,
-            onClick = onScanClick,
+            onClick = alEscanear,
             icon = { Icon(Icons.Filled.CenterFocusStrong, contentDescription = null) },
             label = { Text("ESCANEAR") },
             colors = NavigationBarItemDefaults.colors(

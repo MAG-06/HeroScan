@@ -1,8 +1,5 @@
 package com.example.heroscan.ui.search
 
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,7 +20,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -37,65 +37,42 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.heroscan.ui.components.AppTopBar
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import com.example.heroscan.model.Comic
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.heroscan.viewmodel.SearchViewModel
-import com.example.heroscan.viewmodel.GeneralSearchViewModel
-import com.example.heroscan.viewmodel.SearchUiState
-import com.example.heroscan.model.dto.MetronIssueListItem
+import com.example.heroscan.model.Comic
+import com.example.heroscan.model.ComicResumen
+import com.example.heroscan.ui.components.BarraSuperior
+import com.example.heroscan.util.vibrarDispositivo
 
-// Pantalla de búsqueda por código escrito: muestra carga, error o resultado, y vibra cuando encuentra el cómic.
+// Pantalla de búsqueda por código escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
 @Composable
-fun SearchScreen(
-    onBackClick: () -> Unit = {},
-    onComicFound: (Comic) -> Unit = {},
-    viewModelSearch: SearchViewModel = viewModel(),
-    viewModelGeneral: GeneralSearchViewModel = viewModel()
+fun PantallaBusqueda(
+    alVolver: () -> Unit = {},
+    alEncontrarComic: (Comic) -> Unit = {},
+    viewModel: BusquedaViewModel = viewModel()
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("TODO") }
-
-    val filters = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
-    val uiState = viewModelGeneral.uiState
-
-    // Dentro del Composable SearchScreen, antes del LaunchedEffect
+    val uiState = viewModel.uiState
     val context = LocalContext.current
 
-    // Cuando llega Success, navega a ComicDetailScreen
+    // Cuando se encuentra el cómic: vibra, navega al detalle y reinicia el estado de la búsqueda
     LaunchedEffect(uiState) {
-        if (uiState is SearchUiState.Success) {
-            // Vibrar el celular
-            val vibrator = context.getSystemService(Vibrator::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                vibrator?.vibrate(200)
-            }
-
-            onComicFound(uiState.comic)
-            viewModelGeneral.resetState()
+        if (uiState is BusquedaUiState.Encontrado) {
+            vibrarDispositivo(context)
+            alEncontrarComic(uiState.comic)
+            viewModel.reiniciarEstado()
         }
     }
 
@@ -105,25 +82,20 @@ fun SearchScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            AppTopBar(
-                title = "BUSCAR CÓMIC",
-                onBackClick = onBackClick,
-                trailingIcon = Icons.Filled.CenterFocusStrong,
-                trailingIconTint = Color.White,
-                trailingIconBackground = MaterialTheme.colorScheme.primary
+            BarraSuperior(
+                titulo = "BUSCAR CÓMIC",
+                alVolver = alVolver,
+                iconoDerecho = Icons.Filled.CenterFocusStrong,
+                colorIconoDerecho = Color.White,
+                fondoIconoDerecho = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            SearchTextField(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                onSearch = {
-                    val tipo = viewModelSearch.clasificarCodigoTexto(searchQuery)
-                    if (tipo != "Desconocido") {
-                        viewModelGeneral.searchComic(searchQuery, tipo)
-                    }
-                }
+            CampoBusqueda(
+                texto = viewModel.textoBusqueda,
+                alCambiarTexto = viewModel::cambiarTextoBusqueda,
+                alBuscar = viewModel::buscar
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -135,60 +107,58 @@ fun SearchScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                filters.forEach { filter ->
-                    SearchFilterChip(
-                        label = filter,
-                        selected = selectedFilter == filter,
-                        onClick = { selectedFilter = filter }
+                viewModel.filtros.forEach { filtro ->
+                    ChipFiltro(
+                        texto = filtro,
+                        seleccionado = viewModel.filtroSeleccionado == filtro,
+                        alPulsar = { viewModel.seleccionarFiltro(filtro) }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Observar el estado de la búsqueda
+            // Lo que se muestra depende del estado de la búsqueda
             when (uiState) {
-                is SearchUiState.Idle -> {
-                    EmptySearchContent(modifier = Modifier.weight(1f))
+                is BusquedaUiState.Inicial -> {
+                    ContenidoBusquedaVacia(modifier = Modifier.weight(1f))
                 }
-                is SearchUiState.Loading -> {
-                    LoadingContent(modifier = Modifier.weight(1f))
+                is BusquedaUiState.Cargando -> {
+                    ContenidoCargando(modifier = Modifier.weight(1f))
                 }
-                is SearchUiState.Error -> {
-                    ErrorContent(
-                        message = uiState.message,
+                is BusquedaUiState.Error -> {
+                    ContenidoError(
+                        mensaje = uiState.mensaje,
                         modifier = Modifier.weight(1f)
                     )
                 }
-                is SearchUiState.MultipleResults -> {
-                    MultipleResultsContent(
-                        results = (uiState as SearchUiState.MultipleResults).results,
-                        onSelect = { issueId ->
-                            viewModelGeneral.selectComic(issueId, viewModelSearch.clasificarCodigoTexto(searchQuery))
-                        },
+                is BusquedaUiState.VariosResultados -> {
+                    ContenidoVariosResultados(
+                        resultados = uiState.resultados,
+                        alSeleccionar = viewModel::seleccionarComic,
                         modifier = Modifier.weight(1f)
                     )
                 }
-                is SearchUiState.Success -> {
-                    // No muestra nada, el LaunchedEffect ya navega
+                is BusquedaUiState.Encontrado -> {
+                    // No muestra nada: el LaunchedEffect ya se encarga de navegar al detalle
                 }
             }
-
         }
     }
 }
 
+// Barra de texto para escribir el código. Al pulsar "buscar" en el teclado se lanza la búsqueda.
 @Composable
-private fun SearchTextField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit
+private fun CampoBusqueda(
+    texto: String,
+    alCambiarTexto: (String) -> Unit,
+    alBuscar: () -> Unit
 ) {
     OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
+        value = texto,
+        onValueChange = alCambiarTexto,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+        keyboardActions = KeyboardActions(onSearch = { alBuscar() }),
         placeholder = {
             Text(
                 text = "Busca por título, personaje o código...",
@@ -203,8 +173,8 @@ private fun SearchTextField(
             )
         },
         trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+            if (texto.isNotEmpty()) {
+                IconButton(onClick = { alCambiarTexto("") }) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Limpiar búsqueda",
@@ -232,17 +202,18 @@ private fun SearchTextField(
     )
 }
 
+// Chip de filtro: relleno de color si está seleccionado, solo con borde si no.
 @Composable
-private fun SearchFilterChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
+private fun ChipFiltro(
+    texto: String,
+    seleccionado: Boolean,
+    alPulsar: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .then(
-                if (selected) {
+                if (seleccionado) {
                     Modifier.background(MaterialTheme.colorScheme.primary)
                 } else {
                     Modifier.border(
@@ -252,20 +223,21 @@ private fun SearchFilterChip(
                     )
                 }
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = alPulsar)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
-            text = label,
-            color = if (selected) Color.Black else Color.White,
+            text = texto,
+            color = if (seleccionado) Color.Black else Color.White,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
+// Contenido que se muestra antes de buscar: ícono grande y un texto de ayuda.
 @Composable
-private fun EmptySearchContent(modifier: Modifier = Modifier) {
+private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -326,8 +298,9 @@ private fun EmptySearchContent(modifier: Modifier = Modifier) {
     }
 }
 
+// Indicador de carga mientras se busca el cómic.
 @Composable
-private fun LoadingContent(modifier: Modifier = Modifier) {
+private fun ContenidoCargando(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -346,8 +319,9 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
     }
 }
 
+// Mensaje que se muestra cuando la búsqueda falla o no encuentra nada.
 @Composable
-private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
+private fun ContenidoError(mensaje: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -364,7 +338,7 @@ private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = message,
+            text = mensaje,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             textAlign = TextAlign.Center
@@ -372,45 +346,47 @@ private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
     }
 }
 
+// Lista de cómics cuando la búsqueda devuelve varios resultados. Al tocar uno se pide su detalle.
 @Composable
-private fun MultipleResultsContent(
-    results: List<MetronIssueListItem>,
-    onSelect: (Int) -> Unit,
+private fun ContenidoVariosResultados(
+    resultados: List<ComicResumen>,
+    alSeleccionar: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(horizontal = 20.dp)) {
         Text(
-            text = "Se encontraron ${results.size} resultados",
+            text = "Se encontraron ${resultados.size} resultados",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(results) { item ->
-                ComicResultCard(item = item, onClick = { onSelect(item.id) })
+            items(resultados) { comic ->
+                TarjetaResultadoComic(comic = comic, alPulsar = { alSeleccionar(comic.id) })
             }
         }
     }
 }
 
+// Tarjeta de un resultado: miniatura de la portada, título con número y fecha.
 @Composable
-private fun ComicResultCard(
-    item: MetronIssueListItem,
-    onClick: () -> Unit
+private fun TarjetaResultadoComic(
+    comic: ComicResumen,
+    alPulsar: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
+            .clickable(onClick = alPulsar)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (!item.image.isNullOrEmpty()) {
+        if (comic.portadaUrl.isNotEmpty()) {
             AsyncImage(
-                model = item.image,
+                model = comic.portadaUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .size(80.dp)
@@ -435,17 +411,17 @@ private fun ComicResultCard(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = "${item.series.name} #${item.number}",
+                text = "${comic.titulo} #${comic.numero}",
                 color = Color.White,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            if (!item.cover_date.isNullOrEmpty()) {
+            if (comic.fechaPortada.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = item.cover_date,
+                    text = comic.fechaPortada,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )

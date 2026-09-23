@@ -8,9 +8,11 @@ Aplicación Android para escanear códigos de barras de cómics físicos y obten
 - Kotlin
 - Jetpack Compose (UI)
 - Material Design 3
-- CameraX (cámara funcionando, vista previa en vivo integrada en ScanScreen)
+- CameraX (cámara funcionando, vista previa en vivo integrada en PantallaEscaneo)
 - Google ML Kit Barcode Scanning (integrado, detecta códigos de barras en tiempo real desde la cámara)
-- Retrofit (consumo de API, pendiente de implementar)
+- Retrofit + Gson (API de Metron para cómics y MyMemory para traducir descripciones)
+- Coil (carga de imágenes desde URL/Uri)
+- Vibración al encontrar un cómic (Vibrator; el vibrador es un actuador, no cuenta como sensor)
 - Android Sensor Framework (sensores, pendiente de implementar)
 - Navigation Compose (navegación entre pantallas)
 
@@ -19,31 +21,57 @@ MVVM sencilla según lo aprendido en clase:
 ```
 UI / Compose → ViewModel → Repository → Retrofit / API
 ```
-Por ahora solo existe la capa UI. ViewModel, Repository y Retrofit se agregan cuando se conecte la API real.
+- La UI solo dibuja y reenvía eventos al ViewModel; no contiene lógica.
+- Cada pantalla con lógica tiene su propio ViewModel, en el mismo paquete que la pantalla.
+- La UI nunca usa DTOs de la API: el mapper los convierte a modelos de `model/`.
+
+## Convención de nombres
+- Todo el código (clases, funciones, variables, parámetros) se nombra en español.
+- Excepciones: nombres de paquetes, sufijos técnicos (ViewModel, Repository, Api, Dto, UiState), métodos del framework (onCreate, onCleared) y campos de los DTO (deben coincidir con las claves del JSON).
+- Cada función lleva un comentario `//` encima explicando qué hace.
 
 ## Estructura actual del proyecto
 ```
 com.example.heroscan
-├── MainActivity.kt          (NavHost con rutas: home, comicDetail/{comicId}, scan)
-├── ui.theme/                 (paleta oscura fija: fondo, superficie, cian y magenta; sin modo claro ni dynamic color)
-├── ui.home/
-│   └── HomeScreen.kt        (pantalla principal, diseño de Figma implementado, pide permiso de cámara antes de escanear)
-├── ui.scan/
-│   └── ScanScreen.kt        (pantalla de escaneo: cámara en vivo con CameraX + detección de código de barras con ML Kit)
-├── ui.detail/
-│   └── ComicDetailScreen.kt (pantalla de detalle, placeholder con datos mock)
-└── model/
-    ├── Comic.kt              (data class del cómic)
-    └── MockComics.kt         (datos de ejemplo temporales)
+├── MainActivity.kt                (aplica TemaHeroScan y muestra NavegacionHeroScan)
+├── navigation/
+│   ├── NavegacionHeroScan.kt      (NavHost con todas las pantallas)
+│   └── Rutas.kt                   (constantes de rutas + convertir Comic a/desde JSON para la ruta de detalle)
+├── model/                         (modelos de la app: Comic, Personaje, ComicResumen, TipoCodigo)
+├── network/
+│   ├── api/                       (MetronApi, TraduccionApi)
+│   ├── dto/                       (DTOs que reflejan el JSON de las APIs)
+│   ├── mapper/                    (MetronMapper: DTO → modelo)
+│   └── ClienteRetrofit.kt
+├── repository/
+│   └── ComicRepository.kt         (busca por código, trae detalle, traduce descripción, obtiene personajes)
+├── util/
+│   ├── ClasificadorCodigo.kt      (limpiar y clasificar códigos: UPC-A, EAN-13, ISBN, ISSN)
+│   └── Vibracion.kt               (vibrarDispositivo)
+└── ui/
+    ├── components/ComponentesComunes.kt (BarraSuperior, BotonAccionPrincipal, BotonCircular, Visor, PanelInferior, AreaEscaneo)
+    ├── home/PantallaInicio.kt     (pantalla principal, pide permiso de cámara antes de escanear)
+    ├── scan/
+    │   ├── PantallaEscaneo.kt     (cámara en vivo con CameraX + código detectado)
+    │   ├── EscaneoViewModel.kt    (ML Kit, linterna, código detectado)
+    │   └── PantallaEscaneoPortada.kt (elegir imagen de la galería; la búsqueda por portada está pendiente)
+    ├── search/
+    │   ├── PantallaBusqueda.kt    (búsqueda por código escrito)
+    │   ├── BusquedaViewModel.kt   (texto, filtro, búsqueda y selección de resultados)
+    │   └── BusquedaUiState.kt
+    ├── detail/PantallaDetalleComic.kt (detalle del cómic con datos reales de Metron)
+    └── theme/                     (Colores, Tema, Tipografia: paleta oscura fija, sin modo claro ni dynamic color)
 
 res/drawable/
-└── imageback_scan_card.jpg  (imagen de fondo usada en HomeScreen y ScanScreen)
+└── imageback_scan_card.jpg  (imagen de fondo usada en PantallaInicio y en las pantallas de escaneo)
 ```
 
 ## Rutas de navegación (NavHost)
-- `"home"` → HomeScreen (pantalla principal)
-- `"comicDetail/{comicId}"` → ComicDetailScreen (detalle del cómic)
-- `"scan"` → ScanScreen (pantalla de escaneo con cámara)
+- `"inicio"` → PantallaInicio
+- `"escaneo"` → PantallaEscaneo (cámara)
+- `"escaneoPortada"` → PantallaEscaneoPortada
+- `"busqueda"` → PantallaBusqueda
+- `"detalleComic/{comicJson}"` → PantallaDetalleComic (el cómic viaja como JSON en la ruta)
 
 ## Decisiones CONFIRMADAS
 - Aplicación Android nativa
@@ -73,7 +101,8 @@ res/drawable/
 3. (hecho) Implementar CameraX (cámara funcionando)
 4. (hecho) Integrar ML Kit Barcode Scanning
 5. (hecho) Mostrar código detectado en pantalla (se ve en el panel inferior de ScanScreen)
-6. Siguiente paso: investigar y conectar API de cómics
+6. (hecho) Conectar API de cómics (Metron) y búsqueda por código escrito
+7. (hecho) Reorganizar el código en MVVM con nombres en español
 
 ## Reglas de desarrollo
 - NO adelantarse: implementar solo lo solicitado explícitamente.
