@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 
+// Componentes reutilizables de la UI: barra superior, botones, visor de escaneo y panel inferior.
 
 // Botón circular de "volver" reutilizado en Scan y en Detalle del cómic
 @Composable

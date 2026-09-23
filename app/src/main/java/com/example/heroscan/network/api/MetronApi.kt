@@ -10,8 +10,12 @@ interface MetronApi {
 
     // Buscar por UPC (prefijo, para códigos de 12 dígitos)
     @GET("api/issue/")
-    suspend fun searchByUpc(
-        @Query("upc_starts_with") upc: String
+    suspend fun searchByUpc(@Query("upc_starts_with") upc: String
+    ): MetronListResponse
+
+    // Buscar por UPC exacto (para códigos de 17 dígitos: UPC + suplemento)
+    @GET("api/issue/")
+    suspend fun searchByExactUpc(@Query("upc") upc: String
     ): MetronListResponse
 
     // Obtener detalle completo por ID

@@ -51,6 +51,8 @@ import com.example.heroscan.ui.components.CircleActionButton
 import com.example.heroscan.ui.components.BottomPanel
 import com.example.heroscan.viewmodel.ScanViewModel
 
+// Pantalla de escaneo: muestra la cámara en vivo (CameraX) y el código de barras detectado.
+
 @Composable
 fun ScanScreen(
     onBackClick: () -> Unit = {},

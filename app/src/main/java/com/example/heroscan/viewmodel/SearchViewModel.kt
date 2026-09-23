@@ -2,6 +2,8 @@ package com.example.heroscan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.heroscan.model.Comic
+
+// Identifica el tipo de código ingresado por texto (UPC-A, EAN-13, ISBN, ISSN) según su longitud y prefijo.
 class SearchViewModel : ViewModel() {
 
     fun clasificarCodigoTexto(code: String): String {

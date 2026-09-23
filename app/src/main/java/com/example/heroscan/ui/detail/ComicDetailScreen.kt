@@ -56,6 +56,8 @@ import com.example.heroscan.ui.theme.SectionYellow
 import com.example.heroscan.ui.components.AppTopBar
 import com.example.heroscan.ui.components.PrimaryActionButton
 
+
+// Pantalla de detalle: muestra portada, título, créditos, datos y personajes del cómic encontrado.
 @Composable
 fun ComicDetailScreen(
     comic: Comic,

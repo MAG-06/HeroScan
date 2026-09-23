@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,15 +53,20 @@ import androidx.compose.ui.unit.sp
 import com.example.heroscan.ui.components.AppTopBar
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
-import com.example.heroscan.ui.theme.CodeAmber
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.heroscan.model.Comic
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.heroscan.viewmodel.SearchViewModel
 import com.example.heroscan.viewmodel.GeneralSearchViewModel
 import com.example.heroscan.viewmodel.SearchUiState
+import com.example.heroscan.model.dto.MetronIssueListItem
 
+// Pantalla de búsqueda por código escrito: muestra carga, error o resultado, y vibra cuando encuentra el cómic.
 @Composable
 fun SearchScreen(
     onBackClick: () -> Unit = {},
@@ -149,6 +157,15 @@ fun SearchScreen(
                 is SearchUiState.Error -> {
                     ErrorContent(
                         message = uiState.message,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                is SearchUiState.MultipleResults -> {
+                    MultipleResultsContent(
+                        results = (uiState as SearchUiState.MultipleResults).results,
+                        onSelect = { issueId ->
+                            viewModelGeneral.selectComic(issueId, viewModelSearch.clasificarCodigoTexto(searchQuery))
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -352,5 +369,87 @@ private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
             fontSize = 13.sp,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+private fun MultipleResultsContent(
+    results: List<MetronIssueListItem>,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(horizontal = 20.dp)) {
+        Text(
+            text = "Se encontraron ${results.size} resultados",
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(results) { item ->
+                ComicResultCard(item = item, onClick = { onSelect(item.id) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ComicResultCard(
+    item: MetronIssueListItem,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (!item.image.isNullOrEmpty()) {
+            AsyncImage(
+                model = item.image,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                text = "${item.series.name} #${item.number}",
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (!item.cover_date.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = item.cover_date,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
+        }
     }
 }

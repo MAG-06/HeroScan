@@ -1,5 +1,7 @@
 package com.example.heroscan.network.mapper
 
+// Convierte el detalle de un cómic de Metron (DTO) en el modelo Comic de la app.
+
 import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicCharacter
 import com.example.heroscan.model.dto.MetronIssueDetail
