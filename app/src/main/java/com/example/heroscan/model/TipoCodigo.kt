@@ -6,6 +6,5 @@ enum class TipoCodigo(val etiqueta: String) {
     EAN_13("EAN-13"),
     ISBN_13("ISBN-13"),
     ISBN_10("ISBN-10"),
-    ISSN("ISSN"),
     DESCONOCIDO("Desconocido")
 }

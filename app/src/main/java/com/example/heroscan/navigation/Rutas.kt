@@ -10,12 +10,19 @@ object Rutas {
     const val INICIO = "inicio"
     const val ESCANEO = "escaneo"
     const val ESCANEO_PORTADA = "escaneoPortada"
-    const val BUSQUEDA = "busqueda"
+    // La búsqueda puede recibir un código opcional (cuando se abre desde el escáner con varios resultados)
+    const val ARGUMENTO_CODIGO = "codigo"
+    const val BUSQUEDA = "busqueda?$ARGUMENTO_CODIGO={$ARGUMENTO_CODIGO}"
     const val ARGUMENTO_COMIC = "comicJson"
     const val DETALLE_COMIC = "detalleComic/{$ARGUMENTO_COMIC}"
 }
 
 private val gson = Gson()
+
+// Crea la ruta a la búsqueda. Sin código abre la pantalla vacía; con código, la pantalla lo busca al abrirse.
+fun crearRutaBusqueda(codigo: String? = null): String {
+    return if (codigo == null) "busqueda" else "busqueda?${Rutas.ARGUMENTO_CODIGO}=$codigo"
+}
 
 // Crea la ruta al detalle convirtiendo el cómic a JSON (codificado para que sea válido dentro de la ruta).
 fun crearRutaDetalleComic(comic: Comic): String {

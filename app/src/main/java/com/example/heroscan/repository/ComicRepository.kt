@@ -6,6 +6,7 @@ import com.example.heroscan.model.Personaje
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.network.dto.PersonajeMetron
+import com.example.heroscan.network.dto.RespuestaListaMetron
 import com.example.heroscan.network.mapper.aComic
 import com.example.heroscan.network.mapper.aComicResumen
 import com.example.heroscan.util.limpiarCodigo
@@ -22,6 +23,7 @@ class ComicRepository {
     private val metronApi = ClienteRetrofit.metronApi
     private val traduccionApi = ClienteRetrofit.traduccionApi
 
+
     // Busca un cómic por su código de barras. Por ahora solo se soportan UPC-A y EAN-13.
     suspend fun buscarPorCodigo(codigo: String, tipoCodigo: TipoCodigo): ResultadoBusqueda {
         val codigoLimpio = limpiarCodigo(codigo)
@@ -29,7 +31,7 @@ class ComicRepository {
         return when (tipoCodigo) {
             TipoCodigo.UPC_A -> buscarPorUpc(codigoLimpio, tipoCodigo)
             TipoCodigo.EAN_13 -> buscarPorUpc(codigoLimpio.take(12), tipoCodigo)
-            else -> throw Exception("Tipo de código no soportado aún")
+            else -> throw Exception("Tipo de código ${tipoCodigo.etiqueta} no soportado aún")
         }
     }
 
@@ -41,8 +43,19 @@ class ComicRepository {
             metronApi.buscarPorUpc(upc.take(12))
         }
 
+        return procesarRespuesta(respuesta, tipoCodigo, "No se encontró ningún cómic con ese código")
+    }
+
+    // Decide qué devolver según la respuesta de Metron: error si está vacía,
+    // el detalle si hay un solo cómic, o la lista si hay varios.
+    // La usan todas las búsquedas (código, título y personaje) para no repetir esta lógica.
+    private suspend fun procesarRespuesta(
+        respuesta: RespuestaListaMetron,
+        tipoCodigo: TipoCodigo,
+        mensajeSinResultados: String
+    ): ResultadoBusqueda {
         if (respuesta.results.isEmpty()) {
-            throw Exception("No se encontró ningún cómic con ese código")
+            throw Exception(mensajeSinResultados)
         }
 
         // Si hay un solo resultado, se trae su detalle directamente
@@ -96,5 +109,29 @@ class ComicRepository {
                 Personaje(nombre = personaje.name, imagenUrl = "")
             }
         }
+    }
+
+    // Busca cómics por título de serie en Metron.
+    suspend fun buscarPorTitulo(titulo: String): ResultadoBusqueda {
+        val respuesta = metronApi.buscarPorTitulo(titulo)
+        return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontró ningún cómic con ese título")
+    }
+
+    // Busca los cómics en los que aparece un personaje: primero busca el personaje por nombre
+    // y luego trae la lista de cómics del primero que coincida.
+    suspend fun buscarPorPersonaje(personaje: String): ResultadoBusqueda {
+        // Paso 1: buscar el personaje por nombre
+        val personajes = metronApi.buscarPersonaje(personaje)
+
+        if (personajes.results.isEmpty()) {
+            throw Exception("No se encontró ningún personaje con ese nombre")
+        }
+
+        // Tomar el primer personaje que coincida
+        val personajeId = personajes.results.first().id
+
+        // Paso 2: obtener sus issues
+        val respuesta = metronApi.obtenerIssuesPersonaje(personajeId)
+        return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontraron cómics para ese personaje")
     }
 }

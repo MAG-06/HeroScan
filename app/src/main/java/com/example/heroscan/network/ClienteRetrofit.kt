@@ -41,4 +41,5 @@ object ClienteRetrofit {
             .addConverterFactory(GsonConverterFactory.create()).build()
 
     val traduccionApi: TraduccionApi = retrofitTraduccion.create(TraduccionApi::class.java)
+
 }

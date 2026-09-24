@@ -3,6 +3,7 @@ package com.example.heroscan.network.api
 import com.example.heroscan.network.dto.DetalleComicMetron
 import com.example.heroscan.network.dto.PersonajeMetron
 import com.example.heroscan.network.dto.RespuestaListaMetron
+import com.example.heroscan.network.dto.RespuestaPersonajesMetron
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -25,4 +26,16 @@ interface MetronApi {
     // Obtiene la información de un personaje (incluida su imagen) a partir de su id en Metron.
     @GET("api/character/{id}/")
     suspend fun obtenerDetallePersonaje(@Path("id") id: Int): PersonajeMetron
+
+    // Busca cómics cuyo nombre de serie contenga el texto dado.
+    @GET("api/issue/")
+    suspend fun buscarPorTitulo(@Query("series_name") titulo: String): RespuestaListaMetron
+
+    // Busca personajes por nombre.
+    @GET("api/character/")
+    suspend fun buscarPersonaje(@Query("name") nombre: String): RespuestaPersonajesMetron
+
+    // Obtiene los issues de un personaje específico.
+    @GET("api/character/{id}/issue_list/")
+    suspend fun obtenerIssuesPersonaje(@Path("id") id: Int): RespuestaListaMetron
 }
