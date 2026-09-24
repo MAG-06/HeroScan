@@ -57,14 +57,14 @@ import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.util.vibrarDispositivo
 
-// Pantalla de búsqueda por código escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
+// Pantalla de búsqueda por código, titulo o personaje escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
 @Composable
 fun PantallaBusqueda(
     alVolver: () -> Unit = {},
     alEncontrarComic: (Comic) -> Unit = {},
-    viewModel: BusquedaViewModel = viewModel()
+    busquedaViewModel: BusquedaViewModel = viewModel()
 ) {
-    val uiState = viewModel.uiState
+    val uiState = busquedaViewModel.uiState
     val context = LocalContext.current
 
     // Cuando se encuentra el cómic: vibra, navega al detalle y reinicia el estado de la búsqueda
@@ -72,7 +72,7 @@ fun PantallaBusqueda(
         if (uiState is BusquedaUiState.Encontrado) {
             vibrarDispositivo(context)
             alEncontrarComic(uiState.comic)
-            viewModel.reiniciarEstado()
+            busquedaViewModel.reiniciarEstado()
         }
     }
 
@@ -93,9 +93,9 @@ fun PantallaBusqueda(
             Spacer(modifier = Modifier.height(8.dp))
 
             CampoBusqueda(
-                texto = viewModel.textoBusqueda,
-                alCambiarTexto = viewModel::cambiarTextoBusqueda,
-                alBuscar = viewModel::buscar
+                texto = busquedaViewModel.textoBusqueda,
+                alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
+                alBuscar = busquedaViewModel::buscar
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -107,11 +107,11 @@ fun PantallaBusqueda(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                viewModel.filtros.forEach { filtro ->
+                busquedaViewModel.filtros.forEach { filtro ->
                     ChipFiltro(
                         texto = filtro,
-                        seleccionado = viewModel.filtroSeleccionado == filtro,
-                        alPulsar = { viewModel.seleccionarFiltro(filtro) }
+                        seleccionado = busquedaViewModel.filtroSeleccionado == filtro,
+                        alPulsar = { busquedaViewModel.seleccionarFiltro(filtro) }
                     )
                 }
             }
@@ -135,7 +135,7 @@ fun PantallaBusqueda(
                 is BusquedaUiState.VariosResultados -> {
                     ContenidoVariosResultados(
                         resultados = uiState.resultados,
-                        alSeleccionar = viewModel::seleccionarComic,
+                        alSeleccionar = busquedaViewModel::seleccionarComic,
                         modifier = Modifier.weight(1f)
                     )
                 }

@@ -18,8 +18,6 @@ fun clasificarCodigoEscrito(codigo: String): TipoCodigo {
         codigoLimpio.length == 13 &&
                 (codigoLimpio.startsWith("978") || codigoLimpio.startsWith("979")) -> TipoCodigo.ISBN_13
 
-        codigoLimpio.length == 8 -> TipoCodigo.ISSN
-
         codigoLimpio.length == 12 -> TipoCodigo.UPC_A
 
         codigoLimpio.length == 17 -> TipoCodigo.UPC_A  // UPC-A + suplemento de 5 dígitos
@@ -37,8 +35,6 @@ fun clasificarCodigoEscaneado(codigo: String, formato: Int): TipoCodigo {
     return when {
         formato == Barcode.FORMAT_EAN_13 &&
                 (codigo.startsWith("978") || codigo.startsWith("979")) -> TipoCodigo.ISBN_13
-
-        formato == Barcode.FORMAT_EAN_13 && codigo.startsWith("977") -> TipoCodigo.ISSN
 
         formato == Barcode.FORMAT_EAN_13 -> TipoCodigo.EAN_13
 

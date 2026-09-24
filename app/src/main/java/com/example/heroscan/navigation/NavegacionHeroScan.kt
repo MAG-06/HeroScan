@@ -3,9 +3,11 @@ package com.example.heroscan.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.heroscan.ui.detail.PantallaDetalleComic
 import com.example.heroscan.ui.home.PantallaInicio
 import com.example.heroscan.ui.scan.PantallaEscaneo
@@ -13,6 +15,7 @@ import com.example.heroscan.ui.scan.PantallaEscaneoPortada
 import com.example.heroscan.ui.search.PantallaBusqueda
 
 // Define el NavHost con todas las pantallas de la app y a dónde lleva cada botón.
+// Cada pantalla crea su propio ViewModel; entre pantallas solo viajan datos por la ruta.
 @Composable
 fun NavegacionHeroScan(modifier: Modifier = Modifier) {
 
@@ -24,19 +27,37 @@ fun NavegacionHeroScan(modifier: Modifier = Modifier) {
             PantallaInicio(
                 alEscanear = { controladorNavegacion.navigate(Rutas.ESCANEO) },
                 alBuscarPorPortada = { controladorNavegacion.navigate(Rutas.ESCANEO_PORTADA) },
-                alBuscarPorTexto = { controladorNavegacion.navigate(Rutas.BUSQUEDA) }
+                alBuscarPorTexto = { controladorNavegacion.navigate(crearRutaBusqueda()) }
             )
         }
 
         composable(Rutas.ESCANEO) {
-            PantallaEscaneo(alVolver = { controladorNavegacion.popBackStack() })
+            PantallaEscaneo(
+                alVolver = { controladorNavegacion.popBackStack() },
+                alEncontrarComic = { comic ->
+                    controladorNavegacion.navigate(crearRutaDetalleComic(comic))
+                },
+                alVariosResultados = { codigo ->
+                    controladorNavegacion.navigate(crearRutaBusqueda(codigo))
+                }
+            )
         }
 
         composable(Rutas.ESCANEO_PORTADA) {
             PantallaEscaneoPortada(alVolver = { controladorNavegacion.popBackStack() })
         }
 
-        composable(Rutas.BUSQUEDA) {
+        // El argumento "codigo" es opcional: si no viene, vale null y la búsqueda se abre vacía
+        composable(
+            route = Rutas.BUSQUEDA,
+            arguments = listOf(
+                navArgument(Rutas.ARGUMENTO_CODIGO) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             PantallaBusqueda(
                 alVolver = { controladorNavegacion.popBackStack() },
                 alEncontrarComic = { comic ->

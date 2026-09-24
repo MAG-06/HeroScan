@@ -54,3 +54,11 @@ data class PersonajeMetron(
     val name: String,
     val image: String?
 )
+
+// === BÚSQUEDA DE PERSONAJES ===
+
+// Cada personaje de la lista trae los mismos campos que PersonajeMetron, por eso se reutiliza
+data class RespuestaPersonajesMetron(
+    val count: Int,
+    val results: List<PersonajeMetron>
+)

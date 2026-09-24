@@ -6,10 +6,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,21 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,20 +38,45 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.heroscan.model.Comic
 import com.example.heroscan.ui.components.AreaEscaneo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
-import com.example.heroscan.ui.theme.AmbarCodigo
-import com.example.heroscan.ui.theme.VerdeDetectado
+import com.example.heroscan.util.vibrarDispositivo
 
-// Pantalla de escaneo: muestra la cámara en vivo (CameraX) y el código de barras detectado.
+// Pantalla de escaneo: muestra la cámara en vivo (CameraX), el estado de la búsqueda
+// y navega cuando el ViewModel encuentra el cómic.
 @Composable
 fun PantallaEscaneo(
     alVolver: () -> Unit = {},
-    viewModel: EscaneoViewModel = viewModel()
+    alEncontrarComic: (Comic) -> Unit = {},
+    alVariosResultados: (String) -> Unit = {},
+    escaneoViewModel: EscaneoViewModel = viewModel()
 ) {
+    val uiState = escaneoViewModel.uiState
+    val context = LocalContext.current
+
+    // Cuando el ViewModel termina de buscar: vibra, navega y deja la cámara lista para otro escaneo
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is EscaneoUiState.Encontrado -> {
+                vibrarDispositivo(context)
+                alEncontrarComic(uiState.comic)
+                escaneoViewModel.prepararNuevoEscaneo()
+            }
+
+            is EscaneoUiState.VariosResultados -> {
+                vibrarDispositivo(context)
+                alVariosResultados(uiState.codigo)
+                escaneoViewModel.prepararNuevoEscaneo()
+            }
+
+            else -> {}
+        }
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -70,16 +92,63 @@ fun PantallaEscaneo(
             )
 
             AreaCamara(
-                viewModel = viewModel,
+                viewModel = escaneoViewModel,
                 modifier = Modifier.weight(1f)
             )
 
-            ContenidoInferiorEscaneo(
-                codigoDetectado = viewModel.codigoDetectado,
-                tipoDetectado = viewModel.tipoCodigoDetectado?.etiqueta,
-                linternaEncendida = viewModel.linternaEncendida,
-                alPulsarLinterna = viewModel::alternarLinterna
-            )
+            when (uiState) {
+                is EscaneoUiState.Buscando -> {
+                    PanelInferior {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Buscando cómic...",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                }
+
+                is EscaneoUiState.Error -> {
+                    PanelInferior {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No se encontró el cómic",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.mensaje,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "REINTENTAR",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable(onClick = escaneoViewModel::reintentar)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+                else -> {
+                    ContenidoInferiorEscaneo(
+                        codigoDetectado = escaneoViewModel.codigoDetectado,
+                        tipoDetectado = escaneoViewModel.tipoCodigoDetectado?.etiqueta,
+                        linternaEncendida = escaneoViewModel.linternaEncendida,
+                        alPulsarLinterna = escaneoViewModel::alternarLinterna
+                    )
+                }
+            }
         }
     }
 }
@@ -104,7 +173,10 @@ private fun AreaCamara(viewModel: EscaneoViewModel, modifier: Modifier = Modifie
             }
         )
 
-        Visor(mostrarLineaEscaneo = true, modifier = Modifier.size(width = 280.dp, height = 220.dp))
+        Visor(
+            mostrarLineaEscaneo = true,
+            modifier = Modifier.size(width = 280.dp, height = 220.dp)
+        )
     }
 }
 
@@ -175,7 +247,10 @@ private fun ContenidoInferiorEscaneo(
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
         } else {
-            SeccionCodigoDetectado(codigo = codigoDetectado, tipo = tipoDetectado ?: "Desconocido")
+            /*SeccionCodigoDetectado(
+                codigo = codigoDetectado,
+                tipo = tipoDetectado ?: "Desconocido"
+            )*/
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -196,57 +271,6 @@ private fun ContenidoInferiorEscaneo(
     }
 }
 
-// Muestra la etiqueta "CÓDIGO DETECTADO" junto con el código leído y su tipo.
-@Composable
-private fun SeccionCodigoDetectado(codigo: String, tipo: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .border(width = 1.dp, color = VerdeDetectado, shape = RoundedCornerShape(50))
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.CheckCircle,
-                contentDescription = null,
-                tint = VerdeDetectado,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "CÓDIGO DETECTADO",
-                color = VerdeDetectado,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
 
-        CajaValorDetectado(texto = codigo)
-        CajaValorDetectado(texto = tipo)
-    }
-}
 
-// Caja con fondo oscuro que muestra un valor detectado (el código o su tipo) en letras grandes.
-@Composable
-private fun CajaValorDetectado(texto: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = texto,
-            color = AmbarCodigo,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 2.sp
-        )
-    }
-}
