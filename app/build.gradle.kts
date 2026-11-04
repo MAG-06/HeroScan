@@ -1,6 +1,14 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Lee local.properties para obtener el token de Metron sin escribirlo en el código.
+val propiedadesLocales = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
 }
 
 android {
@@ -17,6 +25,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Crea la constante BuildConfig.METRON_TOKEN con el valor de METRON_TOKEN de local.properties (vacía si no está).
+        buildConfigField("String", "METRON_TOKEN", "\"${propiedadesLocales.getProperty("METRON_TOKEN", "")}\"")
     }
 
     buildTypes {
@@ -32,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -59,4 +70,8 @@ dependencies {
     implementation(libs.camera.view) // dependencias de la camara
     implementation(libs.mlkit.barcode.scanning) // dependencias de mlkit
     implementation(libs.androidx.lifecycle.viewmodel.compose) // dependencias de viewModel estructura MVVM
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0") // dependencias de retrofit para la conexion de la apii
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // OkHttp (para el interceptor de autenticación de Metron)
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }

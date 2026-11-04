@@ -1,19 +1,20 @@
 package com.example.heroscan.model
 
-data class Creator(
-    val role: String,
-    val name: String
-)
-
+// Modelo principal del cómic que usa la app para mostrar su información en pantalla.
 data class Comic(
     val id: String,
-    val title: String,
-    val issueNumber: String,
-    val publisher: String,
-    val releaseDate: String,
-    val description: String,
-    val characters: List<String>,
-    val creators: List<Creator>,
-    val barcode: String,
-    val scanType: String
+    val titulo: String,
+    val numero: String,
+    val editorial: String,
+    val fechaPublicacion: String,
+    val descripcion: String,
+    val personajes: List<Personaje>,
+    val creadores: List<String>,
+    val codigoBarras: String,
+    val tipoCodigo: TipoCodigo,
+    val portadaUrl: String,
+    val fuente: FuenteComic
 )
+
+// API de la que se obtuvo la información del cómic.
+enum class FuenteComic { METRON }
