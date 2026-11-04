@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.TipoCodigo
+import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.clasificarCodigoEscaneado
@@ -25,7 +26,7 @@ import java.util.concurrent.Executors
 // y, cuando detecta uno, busca el cómic en el repositorio.
 class EscaneoViewModel : ViewModel() {
 
-    private val repositorio = ComicRepository()
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi)
 
     var uiState: EscaneoUiState by mutableStateOf(EscaneoUiState.Escaneando)
         private set

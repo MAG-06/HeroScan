@@ -1,5 +1,6 @@
 package com.example.heroscan.network
 
+import com.example.heroscan.BuildConfig
 import com.example.heroscan.network.api.MetronApi
 import com.example.heroscan.network.api.TraduccionApi
 import okhttp3.Interceptor
@@ -21,7 +22,7 @@ object ClienteRetrofit {
 
             val peticion = cadena.request().newBuilder().header(
                 "Authorization",
-                "Bearer fa983adb4227b326ebb5eef1b847875f345b27ce2d7bcc91e5068e17d3e6b255"
+                "Bearer ${BuildConfig.METRON_TOKEN}"
             )
                 .build()
             cadena.proceed(peticion)
