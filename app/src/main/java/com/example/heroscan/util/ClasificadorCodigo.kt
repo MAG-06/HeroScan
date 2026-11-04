@@ -3,7 +3,7 @@ package com.example.heroscan.util
 import com.example.heroscan.model.TipoCodigo
 import com.google.mlkit.vision.barcode.common.Barcode
 
-// Funciones para identificar qué tipo de código (UPC-A, EAN-13, ISBN, ISSN) es un código de barras.
+// Funciones para identificar qué tipo de código (UPC-A, EAN-13, ISBN) es un código de barras.
 
 // Quita espacios y guiones de un código para dejar solo sus dígitos.
 fun limpiarCodigo(codigo: String): String {

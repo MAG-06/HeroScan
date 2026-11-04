@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.navigation.Rutas
+import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.clasificarCodigoEscrito
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
 // Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta.
 class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
 
-    private val repositorio = ComicRepository()
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi)
 
     // Filtros que se muestran debajo de la barra de búsqueda
     val filtros = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")

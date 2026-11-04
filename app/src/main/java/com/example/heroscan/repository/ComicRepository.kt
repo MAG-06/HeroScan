@@ -4,7 +4,8 @@ import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.model.Personaje
 import com.example.heroscan.model.TipoCodigo
-import com.example.heroscan.network.ClienteRetrofit
+import com.example.heroscan.network.api.MetronApi
+import com.example.heroscan.network.api.TraduccionApi
 import com.example.heroscan.network.dto.PersonajeMetron
 import com.example.heroscan.network.dto.RespuestaListaMetron
 import com.example.heroscan.network.mapper.aComic
@@ -17,12 +18,11 @@ sealed interface ResultadoBusqueda {
     data class Varios(val resultados: List<ComicResumen>) : ResultadoBusqueda
 }
 
-// Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory.
-class ComicRepository {
-
-    private val metronApi = ClienteRetrofit.metronApi
-    private val traduccionApi = ClienteRetrofit.traduccionApi
-
+// Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory. Recibe las APIs por constructor.
+class ComicRepository(
+    private val metronApi: MetronApi,
+    private val traduccionApi: TraduccionApi
+) {
 
     // Busca un cómic por su código de barras. Por ahora solo se soportan UPC-A y EAN-13.
     suspend fun buscarPorCodigo(codigo: String, tipoCodigo: TipoCodigo): ResultadoBusqueda {

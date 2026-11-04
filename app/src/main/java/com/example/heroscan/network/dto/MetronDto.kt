@@ -3,7 +3,7 @@ package com.example.heroscan.network.dto
 // DTOs que reflejan el JSON de la API de Metron (búsqueda por UPC, detalle del cómic y personajes).
 // Los nombres de los campos se dejan en inglés porque deben coincidir exactamente con las claves del JSON.
 
-// === LISTA (paso 1: buscar por UPC) ===
+// === LISTA (paso 1: buscar por UPC, título o personaje) ===
 
 data class RespuestaListaMetron(
     val count: Int,

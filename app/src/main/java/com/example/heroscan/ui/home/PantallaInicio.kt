@@ -120,7 +120,7 @@ fun PantallaInicio(
                             icono = Icons.Filled.Search,
                             colorIcono = MaterialTheme.colorScheme.primary,
                             titulo = "BUSCAR POR TEXTO",
-                            descripcion = "Busca por título, personaje o editorial.",
+                            descripcion = "Busca por título, personaje o código.",
                             alPulsar = alBuscarPorTexto
                         )
                         TarjetaOpcionBusqueda(
@@ -135,7 +135,7 @@ fun PantallaInicio(
 
                 }
 
-                BarraNavegacionInferior(alEscanear = pedirPermisoCamara)
+                BarraNavegacionInferior(alEscanear = pedirPermisoCamara, alBuscarPorTexto = alBuscarPorTexto)
             }
 
             SnackbarHost(
@@ -309,9 +309,9 @@ private fun TarjetaOpcionBusqueda(
     }
 }
 
-// Barra de navegación inferior (Inicio, Escanear, Búsqueda).
+// Barra de navegación inferior. Avisa hacia arriba cuando se pulsa ESCANEAR o BÚSQUEDA.
 @Composable
-private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}) {
+private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}, alBuscarPorTexto: () -> Unit = {}) {
 
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
         NavigationBarItem(
@@ -339,7 +339,7 @@ private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}) {
         )
         NavigationBarItem(
             selected = false,
-            onClick = {},
+            onClick = alBuscarPorTexto,
             icon = { Icon(Icons.Filled.Search, contentDescription = null) },
             label = { Text("BÚSQUEDA") },
             colors = NavigationBarItemDefaults.colors(
