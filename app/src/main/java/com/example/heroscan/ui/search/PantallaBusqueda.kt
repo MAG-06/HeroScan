@@ -289,7 +289,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Busca por título, personaje, UPC o código de barra EAN para comenzar la sincronización.",
+            text = "Busca por título, personaje, UPC o código de barras EAN para encontrar tu cómic.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
