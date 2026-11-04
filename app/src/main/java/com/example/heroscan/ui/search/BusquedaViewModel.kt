@@ -103,7 +103,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
 
         // Si el código no tiene una longitud válida, se avisa al usuario en vez de no hacer nada
         if (tipoCodigo == TipoCodigo.DESCONOCIDO) {
-            uiState = BusquedaUiState.Error("Código no válido: debe tener 10, 12, 13 o 17 dígitos")
+            uiState = BusquedaUiState.Error("Código no válido: debe tener 12, 13 o 17 dígitos")
             return
         }
 

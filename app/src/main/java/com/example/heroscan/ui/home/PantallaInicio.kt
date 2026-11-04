@@ -267,7 +267,7 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Apunta a la portada o código de barras",
+                    text = "Apunta al código de barras del cómic",
                     color = Color.White,
                     fontSize = 13.sp
                 )
