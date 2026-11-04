@@ -1,6 +1,7 @@
 package com.example.heroscan.ui.home
 
 import android.Manifest
+import android.hardware.Sensor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -40,8 +42,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,14 +55,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.heroscan.R
 import com.example.heroscan.ui.components.BotonAccionPrincipal
 import com.example.heroscan.ui.theme.CapaOscura
+import com.example.heroscan.util.sensorFlow
 import kotlinx.coroutines.launch
+import kotlin.math.sqrt
 
 // Pantalla principal: permite ir a escanear (pidiendo antes el permiso de cámara) o a las otras formas de búsqueda.
 @Composable
@@ -87,6 +98,8 @@ fun PantallaInicio(
     val pedirPermisoCamara: () -> Unit = {
         solicitudPermisoCamara.launch(Manifest.permission.CAMERA)
     }
+
+    DetectorSacudida(alSacudir = pedirPermisoCamara)
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
 
@@ -259,7 +272,9 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                     fontSize = 13.sp
                 )
 
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                PistaAgitar()
+                Spacer(modifier = Modifier.height(16.dp))
 
                 BotonAccionPrincipal(
                     icono = Icons.Filled.PhotoCamera,
@@ -346,6 +361,67 @@ private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}, alBuscarPorText
                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        )
+    }
+}
+
+// Fuerza mínima (en m/s²) para contar una sacudida. En reposo el acelerómetro marca ~9,8 por la gravedad,
+// así que 18 equivale a casi el doble: hay que agitar con ganas, no basta con mover el teléfono.
+private const val UMBRAL_SACUDIDA = 18f
+
+// Tiempo mínimo (en milisegundos) entre dos sacudidas, para no abrir el escáner dos veces seguidas.
+private const val TIEMPO_ENTRE_SACUDIDAS = 1000L
+
+// Escucha el acelerómetro mientras Inicio está activa y llama a alSacudir cuando el teléfono se agita.
+// Está en un composable aparte para que solo él se redibuje con cada lectura, no toda la pantalla.
+// minActiveState = RESUMED apaga el sensor si Inicio no está al frente (por ejemplo, con el diálogo del permiso abierto o al ir a Escaneo).
+@Composable
+private fun DetectorSacudida(alSacudir: () -> Unit) {
+    val context = LocalContext.current
+
+    val lectura by remember { context.sensorFlow(Sensor.TYPE_ACCELEROMETER) }
+        .collectAsStateWithLifecycle(
+            initialValue = floatArrayOf(0f, 0f, 0f),
+            minActiveState = Lifecycle.State.RESUMED
+        )
+
+    var ultimaSacudida by remember { mutableLongStateOf(0L) }
+
+    // Se ejecuta con cada lectura nueva: calcula la fuerza total (x, y, z) y decide si fue una sacudida
+    LaunchedEffect(lectura) {
+        val magnitud = sqrt(lectura[0] * lectura[0] + lectura[1] * lectura[1] + lectura[2] * lectura[2])
+        val ahora = System.currentTimeMillis()
+
+        if (magnitud > UMBRAL_SACUDIDA && ahora - ultimaSacudida > TIEMPO_ENTRE_SACUDIDAS) {
+            ultimaSacudida = ahora
+            alSacudir()
+        }
+    }
+}
+
+// Pista pequeña tipo chip ("O AGITA EL TELÉFONO") dentro de la tarjeta de escaneo.
+// Solo es visual: avisa que agitar el teléfono también abre el escáner (lo detecta DetectorSacudida).
+@Composable
+private fun PistaAgitar() {
+    Row(
+        modifier = Modifier
+            .border(width = 1.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Vibration,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "O AGITA EL TELÉFONO",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 14.sp
         )
     }
 }
