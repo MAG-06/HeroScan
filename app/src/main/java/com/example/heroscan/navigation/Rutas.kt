@@ -1,5 +1,6 @@
 package com.example.heroscan.navigation
 
+import android.net.Uri
 import com.example.heroscan.model.Comic
 import com.google.gson.Gson
 import java.net.URLDecoder
@@ -12,16 +13,34 @@ object Rutas {
     const val ESCANEO_PORTADA = "escaneoPortada"
     // La búsqueda puede recibir un código opcional (cuando se abre desde el escáner con varios resultados)
     const val ARGUMENTO_CODIGO = "codigo"
-    const val BUSQUEDA = "busqueda?$ARGUMENTO_CODIGO={$ARGUMENTO_CODIGO}"
+    // La búsqueda también puede recibir un título opcional (cuando se abre desde la búsqueda por portada con varios resultados)
+    const val ARGUMENTO_TITULO = "titulo"
+    // Ruta de la búsqueda con sus dos argumentos opcionales (código y título)
+    const val BUSQUEDA = "busqueda?$ARGUMENTO_CODIGO={$ARGUMENTO_CODIGO}&$ARGUMENTO_TITULO={$ARGUMENTO_TITULO}"
     const val ARGUMENTO_COMIC = "comicJson"
     const val DETALLE_COMIC = "detalleComic/{$ARGUMENTO_COMIC}"
 }
 
 private val gson = Gson()
 
-// Crea la ruta a la búsqueda. Sin código abre la pantalla vacía; con código, la pantalla lo busca al abrirse.
-fun crearRutaBusqueda(codigo: String? = null): String {
-    return if (codigo == null) "busqueda" else "busqueda?${Rutas.ARGUMENTO_CODIGO}=$codigo"
+// Crea la ruta a la búsqueda. Sin nada abre la pantalla vacía; con código o título, la pantalla lo busca al abrirse.
+// Solo agrega a la ruta los argumentos que no son null. El título se codifica con Uri.encode porque puede
+// traer espacios, "&" o ":", que romperían la ruta; Navigation lo decodifica solo al leerlo.
+fun crearRutaBusqueda(codigo: String? = null, titulo: String? = null): String {
+    var ruta = "busqueda"
+    // El primer argumento va después de "?" y los siguientes después de "&"
+    var separador = "?"
+
+    if (codigo != null) {
+        ruta += "$separador${Rutas.ARGUMENTO_CODIGO}=$codigo"
+        separador = "&"
+    }
+
+    if (titulo != null) {
+        ruta += "$separador${Rutas.ARGUMENTO_TITULO}=${Uri.encode(titulo)}"
+    }
+
+    return ruta
 }
 
 // Crea la ruta al detalle convirtiendo el cómic a JSON (codificado para que sea válido dentro de la ruta).
