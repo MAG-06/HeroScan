@@ -44,14 +44,27 @@ fun NavegacionHeroScan(modifier: Modifier = Modifier) {
         }
 
         composable(Rutas.ESCANEO_PORTADA) {
-            PantallaEscaneoPortada(alVolver = { controladorNavegacion.popBackStack() })
+            PantallaEscaneoPortada(
+                alVolver = { controladorNavegacion.popBackStack() },
+                alEncontrarComic = { comic ->
+                    controladorNavegacion.navigate(crearRutaDetalleComic(comic))
+                },
+                alVariosResultados = { titulo ->
+                    controladorNavegacion.navigate(crearRutaBusqueda(titulo = titulo))
+                }
+            )
         }
 
-        // El argumento "codigo" es opcional: si no viene, vale null y la búsqueda se abre vacía
+        // Los argumentos "codigo" y "titulo" son opcionales: si no vienen, valen null y la búsqueda se abre vacía
         composable(
             route = Rutas.BUSQUEDA,
             arguments = listOf(
                 navArgument(Rutas.ARGUMENTO_CODIGO) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(Rutas.ARGUMENTO_TITULO) {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null

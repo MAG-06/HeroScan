@@ -28,8 +28,12 @@ interface MetronApi {
     suspend fun obtenerDetallePersonaje(@Path("id") id: Int): PersonajeMetron
 
     // Busca cómics cuyo nombre de serie contenga el texto dado.
+    // Si se pasa un número, filtra además por ese número exacto; si es null, Retrofit no lo agrega a la URL.
     @GET("api/issue/")
-    suspend fun buscarPorTitulo(@Query("series_name") titulo: String): RespuestaListaMetron
+    suspend fun buscarPorTitulo(
+        @Query("series_name") titulo: String,
+        @Query("number") numero: String? = null
+    ): RespuestaListaMetron
 
     // Busca personajes por nombre.
     @GET("api/character/")

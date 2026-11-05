@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 // Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta.
 class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
 
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
     // Filtros que se muestran debajo de la barra de búsqueda
     val filtros = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
@@ -45,11 +45,18 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
 
     // "init" se ejecuta una sola vez, cuando se crea el ViewModel.
     // Si la pantalla se abrió desde el escáner, la ruta trae un código y se busca automáticamente.
+    // Si se abrió desde la búsqueda por portada, trae un título: se pone el filtro TÍTULO y se busca.
+    // El código tiene prioridad: si llegan los dos, se busca por código.
     init {
         val codigoInicial = estadoGuardado.get<String>(Rutas.ARGUMENTO_CODIGO)
+        val tituloInicial = estadoGuardado.get<String>(Rutas.ARGUMENTO_TITULO)
         if (codigoInicial != null) {
             textoBusqueda = codigoInicial
             buscarPorCodigo()
+        } else if (tituloInicial != null) {
+            textoBusqueda = tituloInicial
+            filtroSeleccionado = "TÍTULO"
+            buscarPorTitulo()
         }
     }
 
