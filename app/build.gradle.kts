@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Lee local.properties para obtener el token de Metron sin escribirlo en el código.
+// Lee local.properties para obtener el token de Metron y la clave y el modelo de Gemini sin escribirlos en el código.
 val propiedadesLocales = Properties().apply {
     val archivo = rootProject.file("local.properties")
     if (archivo.exists()) archivo.inputStream().use { load(it) }
@@ -27,6 +27,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Crea la constante BuildConfig.METRON_TOKEN con el valor de METRON_TOKEN de local.properties (vacía si no está).
         buildConfigField("String", "METRON_TOKEN", "\"${propiedadesLocales.getProperty("METRON_TOKEN", "")}\"")
+        // Crea BuildConfig.GEMINI_API_KEY con la clave de Gemini de local.properties (vacía si no está).
+        buildConfigField("String", "GEMINI_API_KEY", "\"${propiedadesLocales.getProperty("GEMINI_API_KEY", "")}\"")
+        // Crea BuildConfig.GEMINI_MODEL con el modelo de Gemini a usar; si no está en local.properties usa "gemini-3.5-flash-lite".
+        buildConfigField("String", "GEMINI_MODEL", "\"${propiedadesLocales.getProperty("GEMINI_MODEL", "gemini-3.5-flash-lite")}\"")
     }
 
     buildTypes {

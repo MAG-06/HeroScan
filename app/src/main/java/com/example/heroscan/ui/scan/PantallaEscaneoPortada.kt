@@ -19,12 +19,16 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,21 +39,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.heroscan.model.Comic
 import com.example.heroscan.ui.components.AreaEscaneo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
 import com.example.heroscan.ui.theme.CapaOscura
+import com.example.heroscan.util.convertirImagenABase64
 import kotlinx.coroutines.launch
 
 // Pantalla para escanear la portada del cómic a partir de una imagen elegida de la galería.
+// Al pulsar ENVIAR convierte la imagen a Base64, se la pasa al ViewModel y navega cuando hay resultado.
 @Composable
-fun PantallaEscaneoPortada(alVolver: () -> Unit = {}) {
+fun PantallaEscaneoPortada(
+    alVolver: () -> Unit = {},
+    alEncontrarComic: (Comic) -> Unit = {},
+    alVariosResultados: (String) -> Unit = {},
+    portadaViewModel: PortadaViewModel = viewModel()
+) {
+    val uiState = portadaViewModel.uiState
+    val context = LocalContext.current
 
     var imagenSeleccionada by remember { mutableStateOf<Uri?>(null) }
 
@@ -85,6 +101,36 @@ fun PantallaEscaneoPortada(alVolver: () -> Unit = {}) {
         }
     }
 
+    // Cuando el ViewModel termina de buscar: navega con el resultado, o muestra el error con REINTENTAR
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is PortadaUiState.Encontrado -> {
+                alEncontrarComic(uiState.comic)
+                portadaViewModel.prepararNuevaBusqueda()
+            }
+
+            is PortadaUiState.VariosResultados -> {
+                alVariosResultados(uiState.titulo)
+                portadaViewModel.prepararNuevaBusqueda()
+            }
+
+            is PortadaUiState.Error -> {
+                val resultado = estadoSnackbar.showSnackbar(
+                    message = uiState.mensaje,
+                    actionLabel = "REINTENTAR",
+                    duration = SnackbarDuration.Long
+                )
+                if (resultado == SnackbarResult.ActionPerformed) {
+                    portadaViewModel.reintentar()
+                } else {
+                    portadaViewModel.prepararNuevaBusqueda()
+                }
+            }
+
+            else -> {}
+        }
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -107,9 +153,22 @@ fun PantallaEscaneoPortada(alVolver: () -> Unit = {}) {
 
                 PanelInferiorPortada(
                     hayImagen = imagenSeleccionada != null,
+                    buscando = uiState is PortadaUiState.Buscando,
                     alPulsarGaleria = { solicitudPermiso.launch(permisoGaleria) },
-                    // Pendiente: la búsqueda por portada todavía no está implementada
-                    alPulsarEnviar = { }
+                    // Convierte la imagen a Base64 y la manda al ViewModel; si no se puede leer, avisa con un Snackbar
+                    alPulsarEnviar = {
+                        val imagen = imagenSeleccionada
+                        if (imagen != null) {
+                            try {
+                                val imagenBase64 = convertirImagenABase64(context, imagen)
+                                portadaViewModel.enviarPortada(imagenBase64)
+                            } catch (e: Exception) {
+                                alcanceCorrutina.launch {
+                                    estadoSnackbar.showSnackbar(e.message ?: "No se pudo leer la imagen")
+                                }
+                            }
+                        }
+                    }
                 )
             }
 
@@ -161,9 +220,11 @@ private fun AreaImagenPortada(imagenSeleccionada: Uri?, modifier: Modifier = Mod
 }
 
 // Panel inferior con el botón ENVIAR (activo solo si hay imagen) y el botón para abrir la galería.
+// Mientras se busca, ENVIAR queda deshabilitado y muestra un indicador de carga en vez del texto.
 @Composable
 private fun PanelInferiorPortada(
     hayImagen: Boolean,
+    buscando: Boolean,
     alPulsarGaleria: () -> Unit,
     alPulsarEnviar: () -> Unit
 ) {
@@ -179,7 +240,7 @@ private fun PanelInferiorPortada(
 
         Button(
             onClick = alPulsarEnviar,
-            enabled = hayImagen,
+            enabled = hayImagen && !buscando,
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -190,11 +251,19 @@ private fun PanelInferiorPortada(
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
-            Text(
-                text = "ENVIAR",
-                color = if (hayImagen) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
-            )
+            if (buscando) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                Text(
+                    text = "ENVIAR",
+                    color = if (hayImagen) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))

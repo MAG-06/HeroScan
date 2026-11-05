@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 // y, cuando detecta uno, busca el cómic en el repositorio.
 class EscaneoViewModel : ViewModel() {
 
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
     var uiState: EscaneoUiState by mutableStateOf(EscaneoUiState.Escaneando)
         private set

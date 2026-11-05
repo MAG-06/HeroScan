@@ -1,16 +1,28 @@
 package com.example.heroscan.repository
 
+import com.example.heroscan.BuildConfig
 import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.model.Personaje
 import com.example.heroscan.model.TipoCodigo
+import com.example.heroscan.network.api.GeminiApi
 import com.example.heroscan.network.api.MetronApi
 import com.example.heroscan.network.api.TraduccionApi
+import com.example.heroscan.network.dto.ConfiguracionGemini
+import com.example.heroscan.network.dto.ContenidoGemini
+import com.example.heroscan.network.dto.DatosEnLineaGemini
+import com.example.heroscan.network.dto.DatosPortadaGemini
+import com.example.heroscan.network.dto.EsquemaGemini
+import com.example.heroscan.network.dto.ParteGemini
+import com.example.heroscan.network.dto.PeticionGemini
 import com.example.heroscan.network.dto.PersonajeMetron
 import com.example.heroscan.network.dto.RespuestaListaMetron
 import com.example.heroscan.network.mapper.aComic
 import com.example.heroscan.network.mapper.aComicResumen
 import com.example.heroscan.util.limpiarCodigo
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import retrofit2.HttpException
 
 // Resultado de una búsqueda: un solo cómic (ya con todo su detalle) o varios para que el usuario elija.
 sealed interface ResultadoBusqueda {
@@ -18,11 +30,29 @@ sealed interface ResultadoBusqueda {
     data class Varios(val resultados: List<ComicResumen>) : ResultadoBusqueda
 }
 
-// Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory. Recibe las APIs por constructor.
+// Resultado de buscar por portada: el título que reconoció la IA y lo que encontró Metron con él.
+// Se guarda el título porque, si hay varios resultados, la pantalla de búsqueda se abre con ese título.
+data class ResultadoPortada(val titulo: String, val resultado: ResultadoBusqueda)
+
+// Instrucciones que se le mandan a Gemini junto con la imagen de la portada.
+// Es una constante de este archivo (como un "private static final" de Java): no cambia nunca.
+private const val INSTRUCCIONES_PORTADA =
+    "Identifica el cómic de esta portada. " +
+        "titulo: nombre de la serie tal como se publicó originalmente en inglés (edición de EE. UU.), sin número ni año. " +
+        "numero: solo el número de la edición (por ejemplo \"1\"); vacío si no se ve. " +
+        "editorial: la editorial de la edición de la portada. " +
+        "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los tres campos vacíos."
+
+// Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory.
+// También reconoce portadas con Gemini y busca en Metron el cómic que encontró. Recibe las APIs por constructor.
 class ComicRepository(
     private val metronApi: MetronApi,
-    private val traduccionApi: TraduccionApi
+    private val traduccionApi: TraduccionApi,
+    private val geminiApi: GeminiApi
 ) {
+
+    // Se usa para leer por segunda vez el JSON que Gemini devuelve como texto.
+    private val gson = Gson()
 
     // Busca un cómic por su código de barras. Por ahora solo se soportan UPC-A y EAN-13.
     suspend fun buscarPorCodigo(codigo: String, tipoCodigo: TipoCodigo): ResultadoBusqueda {
@@ -111,9 +141,9 @@ class ComicRepository(
         }
     }
 
-    // Busca cómics por título de serie en Metron.
-    suspend fun buscarPorTitulo(titulo: String): ResultadoBusqueda {
-        val respuesta = metronApi.buscarPorTitulo(titulo)
+    // Busca cómics por título de serie en Metron. Si se pasa un número, busca solo ese número de la serie.
+    suspend fun buscarPorTitulo(titulo: String, numero: String? = null): ResultadoBusqueda {
+        val respuesta = metronApi.buscarPorTitulo(titulo, numero)
         return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontró ningún cómic con ese título")
     }
 
@@ -133,5 +163,93 @@ class ComicRepository(
         // Paso 2: obtener sus issues
         val respuesta = metronApi.obtenerIssuesPersonaje(personajeId)
         return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontraron cómics para ese personaje")
+    }
+
+    // Busca un cómic a partir de la foto de su portada (en Base64): Gemini reconoce el título y el número,
+    // y luego se buscan en Metron. Si con el número no hay resultados, se reintenta solo con el título.
+    suspend fun buscarPorPortada(imagenBase64: String): ResultadoPortada {
+        if (BuildConfig.GEMINI_API_KEY.isBlank()) {
+            throw Exception("Falta configurar la clave de Gemini")
+        }
+
+        val datos = identificarPortada(imagenBase64)
+
+        val titulo = datos.titulo?.trim() ?: ""
+        val numero = datos.numero?.trim() ?: ""
+
+        if (titulo.isEmpty()) {
+            throw Exception("No se reconoció el cómic en la imagen")
+        }
+
+        val resultado = try {
+            buscarPorTitulo(titulo, numero.ifBlank { null })
+        } catch (e: Exception) {
+            // Si había número, se prueba solo con el título; si no, el error se deja pasar
+            if (numero.isNotBlank()) {
+                buscarPorTitulo(titulo)
+            } else {
+                throw e
+            }
+        }
+
+        return ResultadoPortada(titulo, resultado)
+    }
+
+    // Manda la portada a Gemini y devuelve el título, número y editorial que reconoció.
+    // Gemini devuelve el JSON pedido como texto dentro de la respuesta, por eso se lee una segunda vez con Gson.
+    private suspend fun identificarPortada(imagenBase64: String): DatosPortadaGemini {
+        val peticion = PeticionGemini(
+            contents = listOf(
+                ContenidoGemini(
+                    parts = listOf(
+                        ParteGemini(text = INSTRUCCIONES_PORTADA),
+                        ParteGemini(inlineData = DatosEnLineaGemini(mimeType = "image/jpeg", data = imagenBase64))
+                    )
+                )
+            ),
+            generationConfig = ConfiguracionGemini(
+                responseMimeType = "application/json",
+                responseSchema = EsquemaGemini(
+                    type = "OBJECT",
+                    properties = mapOf(
+                        "titulo" to EsquemaGemini(type = "STRING"),
+                        "numero" to EsquemaGemini(type = "STRING"),
+                        "editorial" to EsquemaGemini(type = "STRING")
+                    ),
+                    required = listOf("titulo", "numero", "editorial")
+                )
+            )
+        )
+
+        val respuesta = try {
+            geminiApi.generarContenido(BuildConfig.GEMINI_MODEL, peticion)
+        } catch (e: HttpException) {
+            throw Exception(mensajeErrorGemini(e.code()))
+        }
+
+        // Cada paso puede venir vacío, por eso se usa ?. en toda la cadena
+        val texto = respuesta.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+            ?: throw Exception("La IA no pudo leer la portada")
+
+        // Segunda lectura: el texto es un JSON con titulo, numero y editorial
+        val datos = try {
+            gson.fromJson(texto, DatosPortadaGemini::class.java)
+        } catch (e: JsonSyntaxException) {
+            null
+        }
+
+        return datos ?: throw Exception("La IA no pudo leer la portada")
+    }
+
+    // Convierte el código de error HTTP de Gemini en un mensaje en español para el usuario.
+    private fun mensajeErrorGemini(codigo: Int): String {
+        return when (codigo) {
+            400 -> "Petición inválida a la IA"
+            403 -> "Clave de Gemini inválida o sin permisos"
+            404 -> "Modelo de Gemini no encontrado"
+            429 -> "Límite de uso de la IA alcanzado, intenta más tarde"
+            503 -> "El servicio de la IA está saturado, intenta más tarde"
+            else -> "Error al consultar la IA (código $codigo)"
+        }
     }
 }
