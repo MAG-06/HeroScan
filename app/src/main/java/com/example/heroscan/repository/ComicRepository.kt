@@ -43,6 +43,12 @@ private const val INSTRUCCIONES_PORTADA =
         "editorial: la editorial de la edición de la portada. " +
         "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los tres campos vacíos."
 
+// Mensaje cuando un error no trae texto propio. Lo usan los ViewModels de escaneo, búsqueda y portada.
+const val MENSAJE_ERROR_DESCONOCIDO = "Error desconocido"
+
+// Mensaje cuando no hay internet o Metron tarda demasiado. Lo usan escaneo y búsqueda.
+const val MENSAJE_SIN_CONEXION_COMICS = "No hay conexión o el servidor tardó demasiado. Intenta de nuevo."
+
 // Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory.
 // También reconoce portadas con Gemini y busca en Metron el cómic que encontró. Recibe las APIs por constructor.
 class ComicRepository(

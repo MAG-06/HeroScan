@@ -9,5 +9,5 @@ sealed interface BusquedaUiState {
     object Cargando : BusquedaUiState
     data class Encontrado(val comic: Comic) : BusquedaUiState
     data class VariosResultados(val resultados: List<ComicResumen>) : BusquedaUiState
-    data class Error(val mensaje: String) : BusquedaUiState
+    data class Error(val mensaje: String, val sinConexion: Boolean = false) : BusquedaUiState
 }

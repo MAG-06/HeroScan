@@ -118,7 +118,7 @@ fun PantallaEscaneo(
                     PanelInferior {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No se encontró el cómic",
+                            text = if (uiState.sinConexion) "Problema de conexión" else "No se encontró el cómic",
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
