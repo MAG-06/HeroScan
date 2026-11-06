@@ -1,8 +1,6 @@
 package com.example.heroscan.ui.scan
 
-import android.Manifest
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -79,28 +77,6 @@ fun PantallaEscaneoPortada(
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
 
-    // Desde Android 13 el permiso para leer fotos cambió de nombre
-    val permisoGaleria = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        Manifest.permission.READ_MEDIA_IMAGES
-    } else {
-        Manifest.permission.READ_EXTERNAL_STORAGE
-    }
-
-    // Pide el permiso de galería: si lo conceden abre la galería, si no muestra un aviso
-    val solicitudPermiso = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { permisoConcedido ->
-        if (permisoConcedido) {
-            selectorGaleria.launch("image/*")
-        } else {
-            alcanceCorrutina.launch {
-                estadoSnackbar.showSnackbar(
-                    "Se necesita permiso para acceder a las fotos"
-                )
-            }
-        }
-    }
-
     // Cuando el ViewModel termina de buscar: navega con el resultado, o muestra el error con REINTENTAR
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -154,7 +130,7 @@ fun PantallaEscaneoPortada(
                 PanelInferiorPortada(
                     hayImagen = imagenSeleccionada != null,
                     buscando = uiState is PortadaUiState.Buscando,
-                    alPulsarGaleria = { solicitudPermiso.launch(permisoGaleria) },
+                    alPulsarGaleria = { selectorGaleria.launch("image/*") },
                     // Convierte la imagen a Base64 y la manda al ViewModel; si no se puede leer, avisa con un Snackbar
                     alPulsarEnviar = {
                         val imagen = imagenSeleccionada
