@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
+import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.ResultadoBusqueda
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -40,7 +41,7 @@ class PortadaViewModel : ViewModel() {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 PortadaUiState.Error("No hay conexión o la IA tardó demasiado. Intenta de nuevo.")
             } catch (e: Exception) {
-                PortadaUiState.Error(e.message ?: "Error desconocido")
+                PortadaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }

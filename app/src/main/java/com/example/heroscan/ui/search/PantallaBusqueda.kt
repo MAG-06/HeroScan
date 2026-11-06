@@ -129,6 +129,7 @@ fun PantallaBusqueda(
                 is BusquedaUiState.Error -> {
                     ContenidoError(
                         mensaje = uiState.mensaje,
+                        sinConexion = uiState.sinConexion,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -320,8 +321,9 @@ private fun ContenidoCargando(modifier: Modifier = Modifier) {
 }
 
 // Mensaje que se muestra cuando la búsqueda falla o no encuentra nada.
+// Si falló por falta de internet (sinConexion), el título dice "Problema de conexión".
 @Composable
-private fun ContenidoError(mensaje: String, modifier: Modifier = Modifier) {
+private fun ContenidoError(mensaje: String, sinConexion: Boolean, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -330,7 +332,7 @@ private fun ContenidoError(mensaje: String, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "No se encontró el cómic",
+            text = if (sinConexion) "Problema de conexión" else "No se encontró el cómic",
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,

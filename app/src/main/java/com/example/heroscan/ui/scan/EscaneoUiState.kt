@@ -16,6 +16,6 @@ sealed interface EscaneoUiState {
     // El código corresponde a varios cómics: se guarda el código para abrir la búsqueda con él
     data class VariosResultados(val codigo: String) : EscaneoUiState
 
-    // La búsqueda falló o no encontró nada
-    data class Error(val mensaje: String) : EscaneoUiState
+    // La búsqueda falló o no encontró nada; sinConexion indica que fue por falta de internet
+    data class Error(val mensaje: String, val sinConexion: Boolean = false) : EscaneoUiState
 }
