@@ -13,7 +13,9 @@ private val EsquemaColoresHeroScan = darkColorScheme(
     surface = Superficie,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = TextoSecundario
+    onSurfaceVariant = TextoSecundario,
+    // Rojo de error (bordes de campos, tarjeta de error y avisos de la pantalla de Acceso)
+    error = RojoSeccion
 )
 
 // Aplica los colores y la tipografía de HeroScan a todo el contenido que recibe.

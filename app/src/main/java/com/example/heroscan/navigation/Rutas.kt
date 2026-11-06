@@ -8,7 +8,12 @@ import java.net.URLEncoder
 
 // Nombres de las rutas de navegación de la app.
 object Rutas {
+    // Pantalla de Acceso (iniciar sesión / crear cuenta). Es la primera si no hay sesión.
+    const val ACCESO = "acceso"
+    // Pantalla principal. Es la base de la pila cuando hay sesión.
     const val INICIO = "inicio"
+    // Pestaña Perfil (correo de la cuenta y cerrar sesión).
+    const val PERFIL = "perfil"
     const val ESCANEO = "escaneo"
     const val ESCANEO_PORTADA = "escaneoPortada"
     // La búsqueda puede recibir un código opcional (cuando se abre desde el escáner con varios resultados)

@@ -1,9 +1,6 @@
 package com.example.heroscan.ui.home
 
-import android.Manifest
 import android.hardware.Sensor
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,8 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CenterFocusStrong
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
@@ -34,9 +28,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -63,41 +54,39 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.heroscan.R
+import com.example.heroscan.ui.components.BarraNavegacionInferior
+import com.example.heroscan.ui.components.BloqueTituloPestana
 import com.example.heroscan.ui.components.BotonAccionPrincipal
+import com.example.heroscan.ui.components.LogoHeroScan
+import com.example.heroscan.ui.components.MENSAJE_PERMISO_CAMARA
+import com.example.heroscan.ui.components.PestanaInferior
+import com.example.heroscan.ui.components.rememberPedirPermisoCamara
 import com.example.heroscan.ui.theme.CapaOscura
 import com.example.heroscan.util.sensorFlow
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
-// Pantalla principal: permite ir a escanear (pidiendo antes el permiso de cámara) o a las otras formas de búsqueda.
+// Pantalla principal: permite ir a escanear (pidiendo antes el permiso de cámara) o a las otras formas de búsqueda y, desde la barra inferior, a Perfil.
 @Composable
 fun PantallaInicio(
     alEscanear: () -> Unit = {},
     alBuscarPorPortada: () -> Unit = {},
-    alBuscarPorTexto: () -> Unit = {}
+    alBuscarPorTexto: () -> Unit = {},
+    alIrAPerfil: () -> Unit = {}
 ) {
 
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
 
     // Pide el permiso de cámara: si lo conceden va a escanear, si no muestra un aviso
-    val solicitudPermisoCamara = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { permisoConcedido ->
-        if (permisoConcedido) {
-            alEscanear()
-        } else {
+    val pedirPermisoCamara = rememberPedirPermisoCamara(
+        alConceder = alEscanear,
+        alRechazar = {
             alcanceCorrutina.launch {
-                estadoSnackbar.showSnackbar(
-                    "Se necesita permiso de cámara para escanear cómics"
-                )
+                estadoSnackbar.showSnackbar(MENSAJE_PERMISO_CAMARA)
             }
         }
-    }
-
-    val pedirPermisoCamara: () -> Unit = {
-        solicitudPermisoCamara.launch(Manifest.permission.CAMERA)
-    }
+    )
 
     DetectorSacudida(alSacudir = pedirPermisoCamara)
 
@@ -108,9 +97,12 @@ fun PantallaInicio(
             Column {
                 Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp)) {
 
-                    EncabezadoInicio()
+                    LogoHeroScan()
                     Spacer(modifier = Modifier.height(20.dp))
-                    BloqueTituloInicio()
+                    BloqueTituloPestana(
+                        titulo = "¡ENCUENTRA TU PRÓXIMO CÓMIC!",
+                        subtitulo = "Escanea, busca y descubre."
+                    )
                     Spacer(modifier = Modifier.height(20.dp))
 
                     TarjetaEscaneo(alEscanear = pedirPermisoCamara)
@@ -148,7 +140,12 @@ fun PantallaInicio(
 
                 }
 
-                BarraNavegacionInferior(alEscanear = pedirPermisoCamara, alBuscarPorTexto = alBuscarPorTexto)
+                BarraNavegacionInferior(
+                    pestanaActiva = PestanaInferior.INICIO,
+                    alEscanear = pedirPermisoCamara,
+                    alBuscar = alBuscarPorTexto,
+                    alIrAPerfil = alIrAPerfil
+                )
             }
 
             SnackbarHost(
@@ -157,56 +154,6 @@ fun PantallaInicio(
             )
         }
     }
-}
-
-// Logo de la app ("HERO" + "SCAN") en la parte superior.
-@Composable
-private fun EncabezadoInicio() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "HERO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(text = "SCAN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        }
-    }
-}
-
-// Título grande y subtítulo de bienvenida.
-@Composable
-private fun BloqueTituloInicio() {
-    Text(
-        text = "¡ENCUENTRA TU PRÓXIMO CÓMIC!",
-        color = Color.White,
-        fontSize = 26.sp,
-        fontWeight = FontWeight.ExtraBold,
-        lineHeight = 30.sp
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    Text(
-        text = "Escanea, busca y descubre.",
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = 15.sp
-    )
 }
 
 // Tarjeta principal con imagen de fondo y el botón "ESCANEAR AHORA".
@@ -321,47 +268,6 @@ private fun TarjetaOpcionBusqueda(
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
-    }
-}
-
-// Barra de navegación inferior. Avisa hacia arriba cuando se pulsa ESCANEAR o BÚSQUEDA.
-@Composable
-private fun BarraNavegacionInferior(alEscanear: () -> Unit = {}, alBuscarPorTexto: () -> Unit = {}) {
-
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
-        NavigationBarItem(
-            selected = true,
-            onClick = { },
-            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-            label = { Text("INICIO") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.primary,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                indicatorColor = MaterialTheme.colorScheme.background
-            )
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = alEscanear,
-            icon = { Icon(Icons.Filled.CenterFocusStrong, contentDescription = null) },
-            label = { Text("ESCANEAR") },
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = alBuscarPorTexto,
-            icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            label = { Text("BÚSQUEDA") },
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        )
     }
 }
 
