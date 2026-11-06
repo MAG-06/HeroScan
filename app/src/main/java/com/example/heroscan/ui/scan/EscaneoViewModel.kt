@@ -11,6 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
+import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
+import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.clasificarCodigoEscaneado
 import com.google.mlkit.vision.barcode.BarcodeScanner
@@ -19,6 +21,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -117,8 +120,11 @@ class EscaneoViewModel : ViewModel() {
                     is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.comic)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosResultados(codigo)
                 }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                EscaneoUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: Exception) {
-                EscaneoUiState.Error(e.message ?: "Error desconocido")
+                EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }

@@ -11,10 +11,13 @@ import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.navigation.Rutas
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
+import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
+import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.clasificarCodigoEscrito
 import com.example.heroscan.util.limpiarCodigo
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 // Maneja la pantalla de búsqueda: guarda el texto y el filtro, decide qué tipo de búsqueda hacer
 // y pide los cómics al repositorio.
@@ -97,8 +100,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: "Error desconocido")
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }
@@ -123,8 +129,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: "Error desconocido")
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }
@@ -141,8 +150,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: "Error desconocido")
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }
@@ -176,8 +188,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
             uiState = try {
                 val comic = repositorio.obtenerDetalleComic(idComic, tipoCodigoBuscado)
                 BusquedaUiState.Encontrado(comic)
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: "Error desconocido")
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
         }
     }
