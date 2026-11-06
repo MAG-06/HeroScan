@@ -15,7 +15,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
 - **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos).
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
-- Vibración al encontrar un cómic con el escáner y manejo de permisos de cámara y galería.
+- Vibración al encontrar un cómic con el escáner y manejo del permiso de cámara.
 - **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos.
 - **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
 
@@ -124,6 +124,22 @@ Qué se guarda en Firestore:
 - Las listas muestran la primera página de resultados de Metron.
 - La búsqueda por personaje usa el primer personaje que coincide con el nombre.
 - Las descripciones de más de 500 caracteres se muestran en inglés (límite de MyMemory).
+
+## Seguridad
+
+Medidas aplicadas siguiendo la guía de clase "Autenticación y seguridad con Jetpack Compose":
+
+- **Sin copias de seguridad:** `allowBackup="false"` y reglas de extracción (`res/xml/data_extraction_rules.xml`). Los datos de la app, incluida la sesión, no se copian a la nube ni pasan a otro teléfono. Al reinstalar la app hay que volver a iniciar sesión.
+- **Solo HTTPS:** `res/xml/seguridad_red.xml` bloquea cualquier conexión `http://` sin cifrar.
+- **Sin permisos de galería:** la foto de la portada se elige con el selector del sistema, que no necesita permisos de almacenamiento.
+- **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
+
+**Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN` y `GEMINI_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
+
+- Metron: un servidor intermediario que guarde el token y haga las consultas por la app.
+- Gemini: Firebase AI Logic con App Check, para llamar al modelo sin poner la clave en la app.
+
+**Sobre `google-services.json`:** identifica el proyecto de Firebase; no es una clave secreta. La protección de los datos está en las reglas de Firestore (ver "Configurar Firebase"). Igual se mantiene fuera de git, porque cada quien usa su propio proyecto.
 
 ## Próximas fases
 
