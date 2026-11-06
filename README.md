@@ -16,6 +16,8 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 - **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos).
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
 - Vibración al encontrar un cómic con el escáner y manejo de permisos de cámara y galería.
+- **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos.
+- **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
 
 ## Tecnologías
 
@@ -27,6 +29,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Sensores | Acelerómetro (SensorManager) |
 | Red | Retrofit, Gson, OkHttp |
 | Imágenes | Coil |
+| Cuentas y datos | Firebase Authentication, Cloud Firestore (Firebase BoM 34.19.0) |
 | APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas) |
 
 ## Arquitectura
@@ -38,18 +41,20 @@ UI (Compose) → ViewModel → Repository → Retrofit / API
 ```
 
 - Cada pantalla con lógica tiene su propio ViewModel (`EscaneoViewModel`, `BusquedaViewModel`, `PortadaViewModel`).
+- `AccesoViewModel` maneja iniciar sesión, crear cuenta y recuperar la contraseña; `PerfilViewModel` da el correo de la cuenta y cierra la sesión; `SesionViewModel` decide si la app abre en Acceso o en Inicio.
 - `ComicRepository` recibe las APIs (Metron, MyMemory y Gemini) por constructor y los ViewModels se las pasan.
+- `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
 - Los estados de cada pantalla se manejan con `sealed interface` (cargando, encontrado, varios resultados, error).
 - Entre pantallas los datos viajan por la ruta de navegación.
 
 ```
 com.example.heroscan
-├── navigation/   NavHost y rutas
-├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo)
+├── navigation/   NavHost, rutas y SesionViewModel
+├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
-├── repository/   ComicRepository
-├── util/         clasificador de códigos de barras, vibración, sensores e imágenes
-└── ui/           pantallas (inicio, escaneo, portada, búsqueda, detalle), componentes comunes y tema
+├── repository/   ComicRepository y CuentaRepository
+├── util/         clasificador de códigos de barras, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave y LimitadorIntentos
+└── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
 ## Cómo correr el proyecto
@@ -69,6 +74,47 @@ com.example.heroscan
 
 > Si las búsquedas muestran **HTTP 401**, falta el token de Metron o está mal escrito en `local.properties`.
 > Si "Buscar por portada" muestra **"Falta configurar la clave de Gemini"**, falta `GEMINI_API_KEY`. El resto de la app funciona sin ella.
+
+## Configurar Firebase (inicio de sesión)
+
+La app usa Firebase para las cuentas. El archivo `app/google-services.json` no está en el repositorio, así que cada persona que clone el proyecto tiene que crear su propio proyecto de Firebase. Hazlo antes del paso 5 de "Cómo correr el proyecto".
+
+1. Entrar a [console.firebase.google.com](https://console.firebase.google.com) y crear un proyecto nuevo. Alcanza con el plan **Spark**, que es gratis. Google Analytics no hace falta.
+2. En el proyecto, **agregar una app Android** con el nombre de paquete `com.example.heroscan`. El apodo y el SHA-1 son opcionales. Descargar el `google-services.json` y ponerlo en la carpeta `app/`, junto a `app/build.gradle.kts`. Ese archivo está en `.gitignore`: **nunca lo subas al repositorio**, porque tiene los datos de tu proyecto.
+3. **Authentication → Comenzar → Sign-in method** → habilitar **Correo electrónico/contraseña**. Solo hace falta el primer interruptor, no el de "vínculo de correo electrónico".
+   Recomendado:
+   - En **Settings**, activar la **protección contra la enumeración de correos electrónicos**.
+   - En **Settings**, en **Política de contraseñas**, poner un mínimo de **8 caracteres** con **Require enforcement**.
+   - En **Templates**, poner el idioma de las plantillas en **español**, para que el correo de recuperar contraseña llegue en español.
+4. **Firestore Database → Crear base de datos**. La ubicación se elige al crearla y **no se puede cambiar después**; este proyecto usa `southamerica-east1`. Después, en la pestaña **Rules**, pegar estas reglas y tocar **Publicar**:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /usuarios/{uid} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+       match /nombresUsuario/{nombre} {
+         allow get: if true;
+         allow create: if request.auth != null
+                       && request.resource.data.uid == request.auth.uid;
+         allow update, delete: if false;
+       }
+     }
+   }
+   ```
+   Con estas reglas, cada usuario solo puede leer y escribir su propio perfil. Además, un nombre de usuario se puede reservar una sola vez y no se puede cambiar ni borrar.
+5. **File → Sync Project with Gradle Files** y ejecutar la app. La primera pantalla es la de inicio de sesión.
+
+Qué se guarda en Firestore:
+- `usuarios/{uid}`: `nombreUsuario`, `correo`, `codigos` (lista) y `fechaRegistro`.
+- `nombresUsuario/{nombre}`: `{ uid }`. Sirve para que dos cuentas no tengan el mismo nombre de usuario.
+- **La contraseña no se guarda en Firestore:** la maneja Firebase Authentication.
+
+> Si el build falla con **"File google-services.json is missing. The Google Services Plugin cannot function without it."**, falta el archivo en `app/`. Descárgalo de la consola de Firebase: **Configuración del proyecto → Tus apps → google-services.json**. Ponlo en `app/` y vuelve a sincronizar Gradle.
+> Si dice **"No matching client found for package name 'com.example.heroscan'"**, la app de Firebase se registró con otro nombre de paquete. Agrega una app Android con `com.example.heroscan` y descarga el archivo de nuevo.
+> Si al crear la cuenta aparece **"No se pudo completar la operación. Inténtalo de nuevo."** aunque haya internet, revisa que la base de Firestore esté creada y que las reglas estén publicadas tal cual.
+> Si el correo para recuperar la contraseña no llega, revisa la carpeta de spam: Firebase lo envía desde una dirección genérica (noreply@…firebaseapp.com) y Gmail suele marcarlo como spam.
 
 ## Limitaciones conocidas
 

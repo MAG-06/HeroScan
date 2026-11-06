@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
 
 // Lee local.properties para obtener el token de Metron y la clave y el modelo de Gemini sin escribirlos en el código.
@@ -79,4 +80,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.11.0") // dependencias de retrofit para la conexion de la apii
     implementation("com.squareup.okhttp3:okhttp:4.12.0") // OkHttp (para el interceptor de autenticación de Metron)
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.kotlinx.coroutines.play.services)
 }

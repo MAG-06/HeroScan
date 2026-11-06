@@ -1,10 +1,14 @@
 package com.example.heroscan.ui.components
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -12,27 +16,41 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CenterFocusStrong
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,8 +61,42 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.heroscan.R
 import com.example.heroscan.ui.theme.FondoCamara
+import com.example.heroscan.ui.theme.GrisInactivo
+import com.example.heroscan.ui.theme.TextoSobreCian
 
-// Componentes reutilizables de la UI: barra superior, botones, visor de escaneo y paneles.
+// Componentes reutilizables de la UI: logo, barra superior, botones, visor de escaneo, paneles, barra inferior, título de pestaña, diálogos y permiso de cámara.
+
+// Logo de la app ("HERO" + "SCAN"). No tiene padding propio: lo pone cada pantalla. Lo usan Inicio, Acceso y Perfil.
+@Composable
+fun LogoHeroScan() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "HERO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = "SCAN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        }
+    }
+}
 
 // Botón cuadrado con la flecha de "volver". Solo lo usa la barra superior.
 @Composable
@@ -250,5 +302,170 @@ fun AreaEscaneo(modifier: Modifier = Modifier, contenido: @Composable BoxScope.(
         )
 
         contenido()
+    }
+}
+
+// Título grande y subtítulo de una pestaña (por ejemplo, Inicio y Perfil). Las medidas son las de Inicio.
+@Composable
+fun BloqueTituloPestana(titulo: String, subtitulo: String) {
+    Text(
+        text = titulo,
+        color = Color.White,
+        fontSize = 26.sp,
+        fontWeight = FontWeight.ExtraBold,
+        lineHeight = 30.sp
+    )
+    Spacer(modifier = Modifier.height(6.dp))
+    Text(
+        text = subtitulo,
+        color = MaterialTheme.colorScheme.primary,
+        fontSize = 15.sp
+    )
+}
+
+// Las 4 pestañas de la barra inferior. Cada pantalla con barra dice cuál es la suya para que se vea marcada.
+enum class PestanaInferior {
+    INICIO,
+    ESCANEAR,
+    BUSQUEDA,
+    PERFIL
+}
+
+// Barra de navegación inferior con 4 pestañas (la usan Inicio y Perfil). Marca en cian la pestaña activa
+// y avisa hacia arriba cuando se pulsa cada una; quien la usa decide a dónde ir.
+@Composable
+fun BarraNavegacionInferior(
+    pestanaActiva: PestanaInferior,
+    alIrAInicio: () -> Unit = {},
+    alEscanear: () -> Unit = {},
+    alBuscar: () -> Unit = {},
+    alIrAPerfil: () -> Unit = {}
+) {
+    // Los mismos colores para todas: la activa en cian sobre un indicador del color de fondo, las demás en gris.
+    val colores = NavigationBarItemDefaults.colors(
+        selectedIconColor = MaterialTheme.colorScheme.primary,
+        selectedTextColor = MaterialTheme.colorScheme.primary,
+        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        indicatorColor = MaterialTheme.colorScheme.background
+    )
+
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
+        NavigationBarItem(
+            selected = pestanaActiva == PestanaInferior.INICIO,
+            onClick = alIrAInicio,
+            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
+            label = { Text("INICIO") },
+            colors = colores
+        )
+        NavigationBarItem(
+            selected = pestanaActiva == PestanaInferior.ESCANEAR,
+            onClick = alEscanear,
+            icon = { Icon(Icons.Filled.CenterFocusStrong, contentDescription = null) },
+            label = { Text("ESCANEAR") },
+            colors = colores
+        )
+        NavigationBarItem(
+            selected = pestanaActiva == PestanaInferior.BUSQUEDA,
+            onClick = alBuscar,
+            icon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            label = { Text("BÚSQUEDA") },
+            colors = colores
+        )
+        NavigationBarItem(
+            selected = pestanaActiva == PestanaInferior.PERFIL,
+            onClick = alIrAPerfil,
+            icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+            label = { Text("PERFIL") },
+            colors = colores
+        )
+    }
+}
+
+// Aviso que muestran Inicio y Perfil cuando se niega el permiso de cámara.
+const val MENSAJE_PERMISO_CAMARA = "Se necesita permiso de cámara para escanear cómics"
+
+// Prepara la petición del permiso de cámara y devuelve la acción que la lanza.
+// Cuando el usuario responde llama a alConceder (si lo dio) o a alRechazar (si lo negó).
+// Empieza con "remember" porque, como remember, guarda algo entre redibujos: el lanzador del permiso.
+@Composable
+fun rememberPedirPermisoCamara(alConceder: () -> Unit, alRechazar: () -> Unit): () -> Unit {
+    val solicitudPermisoCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { permisoConcedido ->
+        if (permisoConcedido) {
+            alConceder()
+        } else {
+            alRechazar()
+        }
+    }
+
+    return { solicitudPermisoCamara.launch(Manifest.permission.CAMERA) }
+}
+
+// Capa de diálogo: oscurece toda la pantalla y pone encima una tarjeta centrada con el contenido que se le pase.
+// La usan el diálogo de recuperar contraseña (Acceso) y el de cerrar sesión (Perfil).
+@Composable
+fun CapaDialogo(contenido: @Composable ColumnScope.() -> Unit) {
+    val forma = RoundedCornerShape(24.dp)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.72f))
+            // Un clickable que no hace nada (y sin efecto visual) para que los toques no lleguen a la pantalla de atrás.
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {}
+            )
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 352.dp)
+                .fillMaxWidth()
+                .shadow(elevation = 16.dp, shape = forma)
+                .clip(forma)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(width = 1.dp, color = GrisInactivo, shape = forma)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            content = contenido
+        )
+    }
+}
+
+// Botón de los diálogos (48 dp, esquinas de 14 dp, texto 14 sp Bold). Relleno = cian con texto oscuro;
+// sin relleno = transparente con texto gris. Si cargando es true muestra un indicador y no responde al toque.
+@Composable
+fun BotonDialogo(
+    texto: String,
+    alPulsar: () -> Unit,
+    relleno: Boolean,
+    cargando: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = {
+            if (!cargando) alPulsar()
+        },
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (relleno) MaterialTheme.colorScheme.primary else Color.Transparent,
+            contentColor = if (relleno) TextoSobreCian else MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        modifier = modifier.height(48.dp)
+    ) {
+        if (cargando) {
+            CircularProgressIndicator(
+                color = TextoSobreCian,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(text = texto, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
