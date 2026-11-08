@@ -27,7 +27,6 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,9 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicResumen
+import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.BarraSuperior
+import com.example.heroscan.ui.components.ContenidoCargando
+import com.example.heroscan.ui.components.ContenidoError
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
@@ -64,7 +65,7 @@ import com.example.heroscan.util.vibrarDispositivo
 @Composable
 fun PantallaBusqueda(
     alVolver: () -> Unit = {},
-    alEncontrarComic: (Comic) -> Unit = {},
+    alEncontrarComic: (Int, TipoCodigo) -> Unit = { _, _ -> },
     busquedaViewModel: BusquedaViewModel = viewModel()
 ) {
     val uiState = busquedaViewModel.uiState
@@ -74,7 +75,7 @@ fun PantallaBusqueda(
     LaunchedEffect(uiState) {
         if (uiState is BusquedaUiState.Encontrado) {
             vibrarDispositivo(context)
-            alEncontrarComic(uiState.comic)
+            alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
             busquedaViewModel.reiniciarEstado()
         }
     }
@@ -153,7 +154,7 @@ private fun ContenidoBusqueda(
                     ContenidoBusquedaVacia(modifier = Modifier.weight(1f))
                 }
                 is BusquedaUiState.Cargando -> {
-                    ContenidoCargando(modifier = Modifier.weight(1f))
+                    ContenidoCargando(texto = "Buscando cómic...", modifier = Modifier.weight(1f))
                 }
                 is BusquedaUiState.Error -> {
                     ContenidoError(
@@ -328,56 +329,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
     }
 }
 
-// Indicador de carga mientras se busca el cómic.
-@Composable
-private fun ContenidoCargando(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(48.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Buscando cómic...",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp
-        )
-    }
-}
-
-// Mensaje que se muestra cuando la búsqueda falla o no encuentra nada.
-// Si falló por falta de internet (sinConexion), el título dice "Problema de conexión".
-@Composable
-private fun ContenidoError(mensaje: String, sinConexion: Boolean, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = if (sinConexion) "Problema de conexión" else "No se encontró el cómic",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = mensaje,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-// Lista de cómics cuando la búsqueda devuelve varios resultados. Al tocar uno se pide su detalle.
+// Lista de cómics cuando la búsqueda devuelve varios resultados. Al tocar uno se abre su detalle.
 @Composable
 private fun ContenidoVariosResultados(
     resultados: List<ComicResumen>,

@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.heroscan.model.Comic
+import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.AreaEscaneo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
@@ -61,7 +61,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PantallaEscaneoPortada(
     alVolver: () -> Unit = {},
-    alEncontrarComic: (Comic) -> Unit = {},
+    alEncontrarComic: (Int, TipoCodigo) -> Unit = { _, _ -> },
     alVariosResultados: (String) -> Unit = {},
     portadaViewModel: PortadaViewModel = viewModel()
 ) {
@@ -84,7 +84,7 @@ fun PantallaEscaneoPortada(
     LaunchedEffect(uiState) {
         when (uiState) {
             is PortadaUiState.Encontrado -> {
-                alEncontrarComic(uiState.comic)
+                alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
                 portadaViewModel.prepararNuevaBusqueda()
             }
 

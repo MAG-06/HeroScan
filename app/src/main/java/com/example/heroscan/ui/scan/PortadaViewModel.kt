@@ -34,7 +34,7 @@ class PortadaViewModel : ViewModel() {
             uiState = try {
                 val resultadoPortada = repositorio.buscarPorPortada(imagenBase64)
                 when (val resultado = resultadoPortada.resultado) {
-                    is ResultadoBusqueda.Unico -> PortadaUiState.Encontrado(resultado.comic)
+                    is ResultadoBusqueda.Unico -> PortadaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> PortadaUiState.VariosResultados(resultadoPortada.titulo)
                 }
             } catch (e: IOException) {

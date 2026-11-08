@@ -38,7 +38,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.heroscan.model.Comic
+import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.AreaEscaneo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
@@ -53,7 +53,7 @@ import com.example.heroscan.util.vibrarDispositivo
 @Composable
 fun PantallaEscaneo(
     alVolver: () -> Unit = {},
-    alEncontrarComic: (Comic) -> Unit = {},
+    alEncontrarComic: (Int, TipoCodigo) -> Unit = { _, _ -> },
     alVariosResultados: (String) -> Unit = {},
     escaneoViewModel: EscaneoViewModel = viewModel()
 ) {
@@ -65,7 +65,7 @@ fun PantallaEscaneo(
         when (uiState) {
             is EscaneoUiState.Encontrado -> {
                 vibrarDispositivo(context)
-                alEncontrarComic(uiState.comic)
+                alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
                 escaneoViewModel.prepararNuevoEscaneo()
             }
 

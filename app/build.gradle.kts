@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.kotlin.serialization) // genera el código de las rutas @Serializable (rutas tipadas)
 }
 
 // Lee local.properties para obtener el token de Metron y la clave y el modelo de Gemini sin escribirlos en el código.
@@ -68,6 +69,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.navigation.compose)
+    implementation(libs.kotlinx.serialization.json) // convierte las rutas @Serializable en argumentos de navegación
     implementation(libs.material.icons.extended)
     implementation(libs.camera.core) // dependencias de la camara
     implementation(libs.camera.camera2)

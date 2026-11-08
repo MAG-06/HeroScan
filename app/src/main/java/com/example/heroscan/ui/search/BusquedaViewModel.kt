@@ -6,9 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.model.TipoCodigo
-import com.example.heroscan.navigation.Rutas
+import com.example.heroscan.navigation.RutaBusqueda
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
@@ -51,13 +52,12 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     // Si se abrió desde la búsqueda por portada, trae un título: se pone el filtro TÍTULO y se busca.
     // El código tiene prioridad: si llegan los dos, se busca por código.
     init {
-        val codigoInicial = estadoGuardado.get<String>(Rutas.ARGUMENTO_CODIGO)
-        val tituloInicial = estadoGuardado.get<String>(Rutas.ARGUMENTO_TITULO)
-        if (codigoInicial != null) {
-            textoBusqueda = codigoInicial
+        val ruta = estadoGuardado.toRoute<RutaBusqueda>()
+        if (ruta.codigo != null) {
+            textoBusqueda = ruta.codigo
             buscarPorCodigo()
-        } else if (tituloInicial != null) {
-            textoBusqueda = tituloInicial
+        } else if (ruta.titulo != null) {
+            textoBusqueda = ruta.titulo
             filtroSeleccionado = "TÍTULO"
             buscarPorTitulo()
         }
@@ -97,7 +97,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
         viewModelScope.launch {
             uiState = try {
                 when (val resultado = repositorio.buscarPorTitulo(textoBusqueda)) {
-                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
+                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
             } catch (e: IOException) {
@@ -126,7 +126,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
         viewModelScope.launch {
             uiState = try {
                 when (val resultado = repositorio.buscarPorCodigo(textoBusqueda, tipoCodigo)) {
-                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
+                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
             } catch (e: IOException) {
@@ -147,7 +147,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
         viewModelScope.launch {
             uiState = try {
                 when (val resultado = repositorio.buscarPorPersonaje(textoBusqueda)) {
-                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.comic)
+                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
             } catch (e: IOException) {
@@ -174,7 +174,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
         buscarPorTitulo()
     }
 
-    // Se llama cuando el usuario elige un cómic de la lista de resultados: trae su detalle completo.
+    // Abre el detalle del cómic elegido de la lista: guarda la lista para mostrarla al volver y navega con su id.
     fun seleccionarComic(idComic: Int) {
         // Guardar la lista actual para volver a mostrarla al regresar del detalle
         val estadoActual = uiState
@@ -182,19 +182,7 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
             ultimosResultados = estadoActual.resultados
         }
 
-        uiState = BusquedaUiState.Cargando
-
-        viewModelScope.launch {
-            uiState = try {
-                val comic = repositorio.obtenerDetalleComic(idComic, tipoCodigoBuscado)
-                BusquedaUiState.Encontrado(comic)
-            } catch (e: IOException) {
-                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
-                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
-            } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
-            }
-        }
+        uiState = BusquedaUiState.Encontrado(idComic, tipoCodigoBuscado)
     }
 
     // Se llama después de navegar al detalle. Si el cómic se eligió de una lista, se vuelve a mostrar
