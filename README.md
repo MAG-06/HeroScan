@@ -72,7 +72,7 @@ com.example.heroscan
 5. **File → Sync Project with Gradle Files**.
 6. Ejecutar en un celular o emulador (Android 7.0 / API 24 o superior).
 
-> Si las búsquedas muestran **HTTP 401**, falta el token de Metron o está mal escrito en `local.properties`.
+> Si las búsquedas muestran **"Falta configurar el token de Metron o no es válido"**, falta `METRON_TOKEN` o está mal escrito en `local.properties`.
 > Si "Buscar por portada" muestra **"Falta configurar la clave de Gemini"**, falta `GEMINI_API_KEY`. El resto de la app funciona sin ella.
 
 ## Configurar Firebase (inicio de sesión)
@@ -124,6 +124,7 @@ Qué se guarda en Firestore:
 - Las listas muestran la primera página de resultados de Metron.
 - La búsqueda por personaje usa el primer personaje que coincide con el nombre.
 - Las descripciones de más de 500 caracteres se muestran en inglés (límite de MyMemory).
+- Metron (cuenta gratuita) acepta unas 20 peticiones por minuto y abrir un cómic cuesta varias (el cómic y la imagen de cada personaje). Si se abren muchos cómics seguidos, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
 
 ## Seguridad
 

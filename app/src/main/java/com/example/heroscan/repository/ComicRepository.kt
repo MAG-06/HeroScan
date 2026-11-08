@@ -73,10 +73,15 @@ class ComicRepository(
 
     // Consulta Metron por UPC. Con 17 dígitos busca el número exacto; con 12 busca todos los números de la serie.
     private suspend fun buscarPorUpc(upc: String, tipoCodigo: TipoCodigo): ResultadoBusqueda {
-        val respuesta = if (upc.length == 17) {
-            metronApi.buscarPorUpcExacto(upc)
-        } else {
-            metronApi.buscarPorUpc(upc.take(12))
+        val respuesta = try {
+            if (upc.length == 17) {
+                metronApi.buscarPorUpcExacto(upc)
+            } else {
+                metronApi.buscarPorUpc(upc.take(12))
+            }
+        } catch (e: HttpException) {
+            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            throw Exception(mensajeErrorMetron(e.code()))
         }
 
         return procesarRespuesta(respuesta, tipoCodigo, "No se encontró ningún cómic con ese código")
@@ -106,7 +111,12 @@ class ComicRepository(
     // Obtiene el detalle completo de un cómic: sus datos, la descripción traducida y sus personajes.
     // La usa DetalleViewModel al abrir la pantalla de detalle.
     suspend fun obtenerDetalleComic(idComic: Int, tipoCodigo: TipoCodigo): Comic {
-        val detalle = metronApi.obtenerDetalleComic(idComic)
+        val detalle = try {
+            metronApi.obtenerDetalleComic(idComic)
+        } catch (e: HttpException) {
+            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            throw Exception(mensajeErrorMetron(e.code()))
+        }
         val descripcion = traducirDescripcion(detalle.desc ?: "Sin descripción")
         val personajes = obtenerPersonajes(detalle.characters)
 
@@ -148,7 +158,12 @@ class ComicRepository(
 
     // Busca cómics por título de serie en Metron. Si se pasa un número, busca solo ese número de la serie.
     suspend fun buscarPorTitulo(titulo: String, numero: String? = null): ResultadoBusqueda {
-        val respuesta = metronApi.buscarPorTitulo(titulo, numero)
+        val respuesta = try {
+            metronApi.buscarPorTitulo(titulo, numero)
+        } catch (e: HttpException) {
+            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            throw Exception(mensajeErrorMetron(e.code()))
+        }
         return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontró ningún cómic con ese título")
     }
 
@@ -156,7 +171,12 @@ class ComicRepository(
     // y luego trae la lista de cómics del primero que coincida.
     suspend fun buscarPorPersonaje(personaje: String): ResultadoBusqueda {
         // Paso 1: buscar el personaje por nombre
-        val personajes = metronApi.buscarPersonaje(personaje)
+        val personajes = try {
+            metronApi.buscarPersonaje(personaje)
+        } catch (e: HttpException) {
+            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            throw Exception(mensajeErrorMetron(e.code()))
+        }
 
         if (personajes.results.isEmpty()) {
             throw Exception("No se encontró ningún personaje con ese nombre")
@@ -166,7 +186,12 @@ class ComicRepository(
         val personajeId = personajes.results.first().id
 
         // Paso 2: obtener sus issues
-        val respuesta = metronApi.obtenerIssuesPersonaje(personajeId)
+        val respuesta = try {
+            metronApi.obtenerIssuesPersonaje(personajeId)
+        } catch (e: HttpException) {
+            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            throw Exception(mensajeErrorMetron(e.code()))
+        }
         return procesarRespuesta(respuesta, TipoCodigo.DESCONOCIDO, "No se encontraron cómics para ese personaje")
     }
 
@@ -244,6 +269,17 @@ class ComicRepository(
         }
 
         return datos ?: throw Exception("La IA no pudo leer la portada")
+    }
+
+    // Traduce el código de error HTTP de Metron a un mensaje en español (401/403 token, 404 no encontrado, 429 demasiadas peticiones, 500 o más servidor caído).
+    private fun mensajeErrorMetron(codigo: Int): String {
+        return when (codigo) {
+            401, 403 -> "Falta configurar el token de Metron o no es válido"
+            404 -> "No se encontró el cómic en Metron"
+            429 -> "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
+            in 500..599 -> "Metron no está respondiendo. Intenta más tarde."
+            else -> "Error al consultar Metron (código $codigo)"
+        }
     }
 
     // Convierte el código de error HTTP de Gemini en un mensaje en español para el usuario.
