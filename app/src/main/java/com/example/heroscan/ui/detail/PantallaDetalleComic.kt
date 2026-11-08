@@ -44,16 +44,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.heroscan.model.Comic
+import com.example.heroscan.model.FuenteComic
 import com.example.heroscan.model.Personaje
+import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.theme.AmarilloSeccion
 import com.example.heroscan.ui.theme.AmbarCodigo
 import com.example.heroscan.ui.theme.FondoPortadaVacia
 import com.example.heroscan.ui.theme.RojoSeccion
+import com.example.heroscan.ui.theme.TemaHeroScan
 
 // Pantalla de detalle: muestra portada, título, créditos, datos y personajes del cómic encontrado.
 @Composable
@@ -352,5 +356,44 @@ private fun AvatarPersonaje(personaje: Personaje) {
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+// ---------- Previews (solo para ver la pantalla en Android Studio; no se usan en la app) ----------
+
+// Cómic de ejemplo con todos los datos: descripción, 3 personajes y 5 creadores (así se ve "Ver todos").
+private val comicEjemplo = Comic(
+    id = "1",
+    titulo = "Batman",
+    numero = "1",
+    editorial = "DC Comics",
+    fechaPublicacion = "2016-06-15",
+    descripcion = "Bruce Wayne patrulla Gotham mientras un nuevo héroe aparece en la ciudad.",
+    personajes = listOf(Personaje("Batman", ""), Personaje("Gotham Girl", ""), Personaje("Alfred Pennyworth", "")),
+    creadores = listOf("Tom King", "David Finch", "Matt Banning", "Jordie Bellaire", "John Workman"),
+    codigoBarras = "76194134182700111",
+    tipoCodigo = TipoCodigo.UPC_A,
+    portadaUrl = "",
+    fuente = FuenteComic.METRON
+)
+
+// El mismo cómic sin personajes ni creadores, y con la descripción que pone el Repository cuando Metron no trae una.
+private val comicSinDatos = comicEjemplo.copy(descripcion = "Sin descripción", personajes = emptyList(), creadores = emptyList())
+
+// Frame "Detalle · Completo": portada vacía (degradado), descripción, personajes, créditos e identificación.
+@Preview(name = "Detalle · Completo", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleCompleto() {
+    TemaHeroScan {
+        PantallaDetalleComic(comic = comicEjemplo)
+    }
+}
+
+// Frame "Detalle · Sin datos": sin personajes ni créditos; solo descripción e identificación.
+@Preview(name = "Detalle · Sin datos", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleSinDatos() {
+    TemaHeroScan {
+        PantallaDetalleComic(comic = comicSinDatos)
     }
 }
