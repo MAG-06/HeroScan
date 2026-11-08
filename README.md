@@ -24,7 +24,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Área | Tecnología |
 |---|---|
 | Lenguaje y UI | Kotlin, Jetpack Compose, Material Design 3 |
-| Navegación | Navigation Compose |
+| Navegación | Navigation Compose con rutas tipadas (`@Serializable` + kotlinx-serialization) |
 | Cámara y escaneo | CameraX, Google ML Kit Barcode Scanning |
 | Sensores | Acelerómetro (SensorManager) |
 | Red | Retrofit, Gson, OkHttp |
@@ -45,7 +45,7 @@ UI (Compose) → ViewModel → Repository → Retrofit / API
 - `ComicRepository` recibe las APIs (Metron, MyMemory y Gemini) por constructor y los ViewModels se las pasan.
 - `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
 - Los estados de cada pantalla se manejan con `sealed interface` (cargando, encontrado, varios resultados, error).
-- Entre pantallas los datos viajan por la ruta de navegación.
+- Entre pantallas solo viaja por la ruta lo necesario (por ejemplo, el id del cómic); la pantalla de destino busca sus datos con su propio ViewModel.
 
 ```
 com.example.heroscan

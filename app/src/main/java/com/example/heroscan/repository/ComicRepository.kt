@@ -24,9 +24,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import retrofit2.HttpException
 
-// Resultado de una búsqueda: un solo cómic (ya con todo su detalle) o varios para que el usuario elija.
+// Resultado de una búsqueda: un solo cómic (su id y su tipo de código, para abrir el detalle) o varios para que el usuario elija.
 sealed interface ResultadoBusqueda {
-    data class Unico(val comic: Comic) : ResultadoBusqueda
+    data class Unico(val idComic: Int, val tipoCodigo: TipoCodigo) : ResultadoBusqueda
     data class Varios(val resultados: List<ComicResumen>) : ResultadoBusqueda
 }
 
@@ -43,10 +43,10 @@ private const val INSTRUCCIONES_PORTADA =
         "editorial: la editorial de la edición de la portada. " +
         "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los tres campos vacíos."
 
-// Mensaje cuando un error no trae texto propio. Lo usan los ViewModels de escaneo, búsqueda y portada.
+// Mensaje cuando un error no trae texto propio. Lo usan los ViewModels de escaneo, búsqueda, portada y detalle.
 const val MENSAJE_ERROR_DESCONOCIDO = "Error desconocido"
 
-// Mensaje cuando no hay internet o Metron tarda demasiado. Lo usan escaneo y búsqueda.
+// Mensaje cuando no hay internet o Metron tarda demasiado. Lo usan escaneo, búsqueda y detalle.
 const val MENSAJE_SIN_CONEXION_COMICS = "No hay conexión o el servidor tardó demasiado. Intenta de nuevo."
 
 // Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory.
@@ -83,7 +83,7 @@ class ComicRepository(
     }
 
     // Decide qué devolver según la respuesta de Metron: error si está vacía,
-    // el detalle si hay un solo cómic, o la lista si hay varios.
+    // el id si hay un solo cómic, o la lista si hay varios.
     // La usan todas las búsquedas (código, título y personaje) para no repetir esta lógica.
     private suspend fun procesarRespuesta(
         respuesta: RespuestaListaMetron,
@@ -94,10 +94,9 @@ class ComicRepository(
             throw Exception(mensajeSinResultados)
         }
 
-        // Si hay un solo resultado, se trae su detalle directamente
+        // Si hay un solo resultado, se devuelve su id: el detalle lo busca al abrirse
         if (respuesta.count == 1) {
-            val comic = obtenerDetalleComic(respuesta.results.first().id, tipoCodigo)
-            return ResultadoBusqueda.Unico(comic)
+            return ResultadoBusqueda.Unico(respuesta.results.first().id, tipoCodigo)
         }
 
         // Si hay varios, se devuelve la lista para que el usuario elija
@@ -105,7 +104,7 @@ class ComicRepository(
     }
 
     // Obtiene el detalle completo de un cómic: sus datos, la descripción traducida y sus personajes.
-    // Es pública porque también se usa cuando el usuario elige un cómic de la lista de resultados.
+    // La usa DetalleViewModel al abrir la pantalla de detalle.
     suspend fun obtenerDetalleComic(idComic: Int, tipoCodigo: TipoCodigo): Comic {
         val detalle = metronApi.obtenerDetalleComic(idComic)
         val descripcion = traducirDescripcion(detalle.desc ?: "Sin descripción")

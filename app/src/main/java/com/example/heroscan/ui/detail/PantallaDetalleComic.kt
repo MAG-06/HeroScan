@@ -47,23 +47,40 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.heroscan.model.Comic
 import com.example.heroscan.model.FuenteComic
 import com.example.heroscan.model.Personaje
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.BarraSuperior
+import com.example.heroscan.ui.components.ContenidoCargando
+import com.example.heroscan.ui.components.ContenidoError
 import com.example.heroscan.ui.theme.AmarilloSeccion
 import com.example.heroscan.ui.theme.AmbarCodigo
 import com.example.heroscan.ui.theme.FondoPortadaVacia
 import com.example.heroscan.ui.theme.RojoSeccion
 import com.example.heroscan.ui.theme.TemaHeroScan
 
-// Pantalla de detalle: muestra portada, título, créditos, datos y personajes del cómic encontrado.
+// Pantalla de detalle: crea el DetalleViewModel y le pasa todo a ContenidoDetalle, que solo dibuja.
 @Composable
 fun PantallaDetalleComic(
-    comic: Comic,
-    alVolver: () -> Unit = {}
+    alVolver: () -> Unit = {},
+    detalleViewModel: DetalleViewModel = viewModel()
+) {
+    ContenidoDetalle(
+        uiState = detalleViewModel.uiState,
+        alVolver = alVolver,
+        alReintentar = detalleViewModel::cargarComic
+    )
+}
+
+// Dibuja el detalle con lo que recibe (cargando, error o el cómic); no tiene ViewModel, así las previews pueden mostrarla con datos de ejemplo.
+@Composable
+private fun ContenidoDetalle(
+    uiState: DetalleUiState,
+    alVolver: () -> Unit = {},
+    alReintentar: () -> Unit = {}
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -75,76 +92,93 @@ fun PantallaDetalleComic(
                 colorIconoDerecho = MaterialTheme.colorScheme.primary
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
-                PortadaComic(portadaUrl = comic.portadaUrl)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                BloqueTituloComic(
-                    titulo = comic.titulo,
-                    numero = comic.numero,
-                    editorial = comic.editorial,
-                    fechaPublicacion = comic.fechaPublicacion
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                SeccionInformacion(
-                    icono = Icons.AutoMirrored.Filled.MenuBook,
-                    colorIcono = MaterialTheme.colorScheme.primary,
-                    titulo = "SOBRE ESTE CÓMIC"
-                ) {
-                    Text(
-                        text = comic.descripcion,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp
+            when (uiState) {
+                is DetalleUiState.Cargando -> {
+                    ContenidoCargando(texto = "Cargando cómic...", modifier = Modifier.weight(1f))
+                }
+                is DetalleUiState.Error -> {
+                    ContenidoError(
+                        mensaje = uiState.mensaje,
+                        sinConexion = uiState.sinConexion,
+                        modifier = Modifier.weight(1f),
+                        alReintentar = alReintentar
                     )
                 }
+                is DetalleUiState.Listo -> {
+                    val comic = uiState.comic
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                if (comic.personajes.isNotEmpty()) {
-                    SeccionInformacion(
-                        icono = Icons.Filled.Star,
-                        colorIcono = AmarilloSeccion,
-                        titulo = "PERSONAJES"
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp)
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.horizontalScroll(rememberScrollState())
+                        PortadaComic(portadaUrl = comic.portadaUrl)
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        BloqueTituloComic(
+                            titulo = comic.titulo,
+                            numero = comic.numero,
+                            editorial = comic.editorial,
+                            fechaPublicacion = comic.fechaPublicacion
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        SeccionInformacion(
+                            icono = Icons.AutoMirrored.Filled.MenuBook,
+                            colorIcono = MaterialTheme.colorScheme.primary,
+                            titulo = "SOBRE ESTE CÓMIC"
                         ) {
-                            comic.personajes.forEach { personaje ->
-                                AvatarPersonaje(personaje = personaje)
+                            Text(
+                                text = comic.descripcion,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp,
+                                lineHeight = 19.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        if (comic.personajes.isNotEmpty()) {
+                            SeccionInformacion(
+                                icono = Icons.Filled.Star,
+                                colorIcono = AmarilloSeccion,
+                                titulo = "PERSONAJES"
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                                ) {
+                                    comic.personajes.forEach { personaje ->
+                                        AvatarPersonaje(personaje = personaje)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+
+                        if (comic.creadores.isNotEmpty()) {
+                            SeccionCreditos(creadores = comic.creadores)
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+
+                        SeccionInformacion(
+                            icono = Icons.Filled.Sell,
+                            colorIcono = MaterialTheme.colorScheme.secondary,
+                            titulo = "IDENTIFICACIÓN"
+                        ) {
+                            TarjetaInformacion {
+                                FilaEtiquetaValor("Código", comic.codigoBarras, AmbarCodigo)
+                                FilaEtiquetaValor("Tipo", comic.tipoCodigo.etiqueta, AmbarCodigo)
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
-
-                if (comic.creadores.isNotEmpty()) {
-                    SeccionCreditos(creadores = comic.creadores)
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
-
-                SeccionInformacion(
-                    icono = Icons.Filled.Sell,
-                    colorIcono = MaterialTheme.colorScheme.secondary,
-                    titulo = "IDENTIFICACIÓN"
-                ) {
-                    TarjetaInformacion {
-                        FilaEtiquetaValor("Código", comic.codigoBarras, AmbarCodigo)
-                        FilaEtiquetaValor("Tipo", comic.tipoCodigo.etiqueta, AmbarCodigo)
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -385,7 +419,7 @@ private val comicSinDatos = comicEjemplo.copy(descripcion = "Sin descripción", 
 @Composable
 private fun PreviewDetalleCompleto() {
     TemaHeroScan {
-        PantallaDetalleComic(comic = comicEjemplo)
+        ContenidoDetalle(uiState = DetalleUiState.Listo(comicEjemplo))
     }
 }
 
@@ -394,6 +428,33 @@ private fun PreviewDetalleCompleto() {
 @Composable
 private fun PreviewDetalleSinDatos() {
     TemaHeroScan {
-        PantallaDetalleComic(comic = comicSinDatos)
+        ContenidoDetalle(uiState = DetalleUiState.Listo(comicSinDatos))
+    }
+}
+
+// Frame "Detalle · Cargando": mientras se pide el cómic a Metron.
+@Preview(name = "Detalle · Cargando", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleCargando() {
+    TemaHeroScan {
+        ContenidoDetalle(uiState = DetalleUiState.Cargando)
+    }
+}
+
+// Frame "Detalle · Error": falló la carga del cómic, con REINTENTAR.
+@Preview(name = "Detalle · Error", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleError() {
+    TemaHeroScan {
+        ContenidoDetalle(uiState = DetalleUiState.Error("Error desconocido"))
+    }
+}
+
+// Frame "Detalle · Error · Sin conexión": sin internet, con REINTENTAR.
+@Preview(name = "Detalle · Error · Sin conexión", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleErrorSinConexion() {
+    TemaHeroScan {
+        ContenidoDetalle(uiState = DetalleUiState.Error("No hay conexión o el servidor tardó demasiado. Intenta de nuevo.", sinConexion = true))
     }
 }
