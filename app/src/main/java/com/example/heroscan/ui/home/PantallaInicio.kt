@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -62,11 +63,13 @@ import com.example.heroscan.ui.components.MENSAJE_PERMISO_CAMARA
 import com.example.heroscan.ui.components.PestanaInferior
 import com.example.heroscan.ui.components.rememberPedirPermisoCamara
 import com.example.heroscan.ui.theme.CapaOscura
+import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.sensorFlow
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 // Pantalla principal: permite ir a escanear (pidiendo antes el permiso de cámara) o a las otras formas de búsqueda y, desde la barra inferior, a Perfil.
+// Guarda el permiso de cámara, el aviso (Snackbar) y el sensor de agitar, y le pasa todo a ContenidoInicio, que solo dibuja.
 @Composable
 fun PantallaInicio(
     alEscanear: () -> Unit = {},
@@ -90,6 +93,24 @@ fun PantallaInicio(
 
     DetectorSacudida(alSacudir = pedirPermisoCamara)
 
+    ContenidoInicio(
+        estadoSnackbar = estadoSnackbar,
+        alEscanear = pedirPermisoCamara,
+        alBuscarPorPortada = alBuscarPorPortada,
+        alBuscarPorTexto = alBuscarPorTexto,
+        alIrAPerfil = alIrAPerfil
+    )
+}
+
+// Dibuja Inicio con lo que recibe; no tiene ViewModel, así las previews pueden mostrarla con datos de ejemplo.
+@Composable
+private fun ContenidoInicio(
+    estadoSnackbar: SnackbarHostState = remember { SnackbarHostState() },
+    alEscanear: () -> Unit = {},
+    alBuscarPorPortada: () -> Unit = {},
+    alBuscarPorTexto: () -> Unit = {},
+    alIrAPerfil: () -> Unit = {}
+) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -105,7 +126,7 @@ fun PantallaInicio(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    TarjetaEscaneo(alEscanear = pedirPermisoCamara)
+                    TarjetaEscaneo(alEscanear = alEscanear)
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
@@ -142,7 +163,7 @@ fun PantallaInicio(
 
                 BarraNavegacionInferior(
                     pestanaActiva = PestanaInferior.INICIO,
-                    alEscanear = pedirPermisoCamara,
+                    alEscanear = alEscanear,
                     alBuscar = alBuscarPorTexto,
                     alIrAPerfil = alIrAPerfil
                 )
@@ -329,5 +350,16 @@ private fun PistaAgitar() {
             fontWeight = FontWeight.Bold,
             lineHeight = 14.sp
         )
+    }
+}
+
+// ---------- Previews (solo para ver la pantalla en Android Studio; no se usan en la app) ----------
+
+// Frame "Inicio": logo, tarjeta de escaneo, las dos formas de buscar y la barra inferior con INICIO activa.
+@Preview(name = "Inicio", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewInicio() {
+    TemaHeroScan {
+        ContenidoInicio()
     }
 }

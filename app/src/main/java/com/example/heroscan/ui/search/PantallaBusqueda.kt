@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,9 +56,11 @@ import coil.compose.AsyncImage
 import com.example.heroscan.model.Comic
 import com.example.heroscan.model.ComicResumen
 import com.example.heroscan.ui.components.BarraSuperior
+import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
 // Pantalla de búsqueda por código, titulo o personaje escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
+// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoBusqueda, que solo dibuja.
 @Composable
 fun PantallaBusqueda(
     alVolver: () -> Unit = {},
@@ -76,6 +79,32 @@ fun PantallaBusqueda(
         }
     }
 
+    ContenidoBusqueda(
+        uiState = uiState,
+        textoBusqueda = busquedaViewModel.textoBusqueda,
+        filtros = busquedaViewModel.filtros,
+        filtroSeleccionado = busquedaViewModel.filtroSeleccionado,
+        alVolver = alVolver,
+        alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
+        alBuscar = busquedaViewModel::buscar,
+        alSeleccionarFiltro = busquedaViewModel::seleccionarFiltro,
+        alSeleccionarComic = busquedaViewModel::seleccionarComic
+    )
+}
+
+// Dibuja Búsqueda con lo que recibe; no tiene ViewModel, así las previews pueden mostrarla con datos de ejemplo.
+@Composable
+private fun ContenidoBusqueda(
+    uiState: BusquedaUiState,
+    textoBusqueda: String,
+    filtros: List<String>,
+    filtroSeleccionado: String,
+    alVolver: () -> Unit = {},
+    alCambiarTexto: (String) -> Unit = {},
+    alBuscar: () -> Unit = {},
+    alSeleccionarFiltro: (String) -> Unit = {},
+    alSeleccionarComic: (Int) -> Unit = {}
+) {
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -93,9 +122,9 @@ fun PantallaBusqueda(
             Spacer(modifier = Modifier.height(8.dp))
 
             CampoBusqueda(
-                texto = busquedaViewModel.textoBusqueda,
-                alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
-                alBuscar = busquedaViewModel::buscar
+                texto = textoBusqueda,
+                alCambiarTexto = alCambiarTexto,
+                alBuscar = alBuscar
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -107,11 +136,11 @@ fun PantallaBusqueda(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                busquedaViewModel.filtros.forEach { filtro ->
+                filtros.forEach { filtro ->
                     ChipFiltro(
                         texto = filtro,
-                        seleccionado = busquedaViewModel.filtroSeleccionado == filtro,
-                        alPulsar = { busquedaViewModel.seleccionarFiltro(filtro) }
+                        seleccionado = filtroSeleccionado == filtro,
+                        alPulsar = { alSeleccionarFiltro(filtro) }
                     )
                 }
             }
@@ -136,7 +165,7 @@ fun PantallaBusqueda(
                 is BusquedaUiState.VariosResultados -> {
                     ContenidoVariosResultados(
                         resultados = uiState.resultados,
-                        alSeleccionar = busquedaViewModel::seleccionarComic,
+                        alSeleccionar = alSeleccionarComic,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -429,5 +458,87 @@ private fun TarjetaResultadoComic(
                 )
             }
         }
+    }
+}
+
+// ---------- Previews (solo para ver la pantalla en Android Studio; no se usan en la app) ----------
+
+// Los mismos filtros que tiene BusquedaViewModel.
+private val filtrosEjemplo = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
+
+// Tres cómics de ejemplo para la lista de resultados (sin portada, así se ve el ícono del libro).
+private val resultadosEjemplo = listOf(
+    ComicResumen(1, "Batman", "1", "2016-06-15", ""),
+    ComicResumen(2, "Batman", "2", "2016-07-06", ""),
+    ComicResumen(3, "Batman", "3", "2016-07-20", "")
+)
+
+// Frame "Búsqueda · Vacía": antes de buscar, con el campo vacío y el filtro TODO.
+@Preview(name = "Búsqueda · Vacía", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaVacia() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.Inicial,
+            textoBusqueda = "",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "TODO"
+        )
+    }
+}
+
+// Frame "Búsqueda · Cargando": buscando "Batman" por título.
+@Preview(name = "Búsqueda · Cargando", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaCargando() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.Cargando,
+            textoBusqueda = "Batman",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "TÍTULO"
+        )
+    }
+}
+
+// Frame "Búsqueda · Error · No encontrado": el título buscado no existe.
+@Preview(name = "Búsqueda · Error · No encontrado", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaErrorNoEncontrado() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.Error("No se encontró ningún cómic con ese título"),
+            textoBusqueda = "zzqqxx",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "TÍTULO"
+        )
+    }
+}
+
+// Frame "Búsqueda · Error · Sin conexión": no hay internet o el servidor tardó demasiado.
+@Preview(name = "Búsqueda · Error · Sin conexión", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaErrorSinConexion() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.Error("No hay conexión o el servidor tardó demasiado. Intenta de nuevo.", sinConexion = true),
+            textoBusqueda = "Batman",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "TÍTULO"
+        )
+    }
+}
+
+// Frame "Búsqueda · Resultados": la lista con los 3 cómics de ejemplo.
+@Preview(name = "Búsqueda · Resultados", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaResultados() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.VariosResultados(resultadosEjemplo),
+            textoBusqueda = "Batman",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "TÍTULO"
+        )
     }
 }

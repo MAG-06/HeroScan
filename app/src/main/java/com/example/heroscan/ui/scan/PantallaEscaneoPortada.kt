@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,11 +51,13 @@ import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
 import com.example.heroscan.ui.theme.CapaOscura
+import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.convertirImagenABase64
 import kotlinx.coroutines.launch
 
 // Pantalla para escanear la portada del cómic a partir de una imagen elegida de la galería.
 // Al pulsar ENVIAR convierte la imagen a Base64, se la pasa al ViewModel y navega cuando hay resultado.
+// Crea (o recibe) el ViewModel, guarda la imagen elegida, abre la galería y muestra el aviso (Snackbar), y le pasa todo a ContenidoPortada, que solo dibuja.
 @Composable
 fun PantallaEscaneoPortada(
     alVolver: () -> Unit = {},
@@ -107,6 +110,39 @@ fun PantallaEscaneoPortada(
         }
     }
 
+    ContenidoPortada(
+        imagenSeleccionada = imagenSeleccionada,
+        buscando = uiState is PortadaUiState.Buscando,
+        estadoSnackbar = estadoSnackbar,
+        alVolver = alVolver,
+        alPulsarGaleria = { selectorGaleria.launch("image/*") },
+        // Convierte la imagen a Base64 y la manda al ViewModel; si no se puede leer, avisa con un Snackbar
+        alPulsarEnviar = {
+            val imagen = imagenSeleccionada
+            if (imagen != null) {
+                try {
+                    val imagenBase64 = convertirImagenABase64(context, imagen)
+                    portadaViewModel.enviarPortada(imagenBase64)
+                } catch (e: Exception) {
+                    alcanceCorrutina.launch {
+                        estadoSnackbar.showSnackbar(e.message ?: "No se pudo leer la imagen")
+                    }
+                }
+            }
+        }
+    )
+}
+
+// Dibuja Portada con lo que recibe; no tiene ViewModel, así las previews pueden mostrarla con datos de ejemplo.
+@Composable
+private fun ContenidoPortada(
+    imagenSeleccionada: Uri?,
+    buscando: Boolean,
+    estadoSnackbar: SnackbarHostState = remember { SnackbarHostState() },
+    alVolver: () -> Unit = {},
+    alPulsarGaleria: () -> Unit = {},
+    alPulsarEnviar: () -> Unit = {}
+) {
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -129,22 +165,9 @@ fun PantallaEscaneoPortada(
 
                 PanelInferiorPortada(
                     hayImagen = imagenSeleccionada != null,
-                    buscando = uiState is PortadaUiState.Buscando,
-                    alPulsarGaleria = { selectorGaleria.launch("image/*") },
-                    // Convierte la imagen a Base64 y la manda al ViewModel; si no se puede leer, avisa con un Snackbar
-                    alPulsarEnviar = {
-                        val imagen = imagenSeleccionada
-                        if (imagen != null) {
-                            try {
-                                val imagenBase64 = convertirImagenABase64(context, imagen)
-                                portadaViewModel.enviarPortada(imagenBase64)
-                            } catch (e: Exception) {
-                                alcanceCorrutina.launch {
-                                    estadoSnackbar.showSnackbar(e.message ?: "No se pudo leer la imagen")
-                                }
-                            }
-                        }
-                    }
+                    buscando = buscando,
+                    alPulsarGaleria = alPulsarGaleria,
+                    alPulsarEnviar = alPulsarEnviar
                 )
             }
 
@@ -249,5 +272,37 @@ private fun PanelInferiorPortada(
             texto = "GALERIA",
             alPulsar = alPulsarGaleria
         )
+    }
+}
+
+// ---------- Previews (solo para ver la pantalla en Android Studio; no se usan en la app) ----------
+
+// Uri de ejemplo: solo sirve para que haya "imagen elegida" (ENVIAR habilitado); Coil no la carga en la preview.
+private val imagenEjemplo = Uri.parse("content://heroscan/preview/portada")
+
+// Frame "Portada · Sin imagen": todavía no se eligió imagen, ENVIAR deshabilitado.
+@Preview(name = "Portada · Sin imagen", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPortadaSinImagen() {
+    TemaHeroScan {
+        ContenidoPortada(imagenSeleccionada = null, buscando = false)
+    }
+}
+
+// Frame "Portada · Con imagen": ya hay imagen elegida, ENVIAR habilitado.
+@Preview(name = "Portada · Con imagen", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPortadaConImagen() {
+    TemaHeroScan {
+        ContenidoPortada(imagenSeleccionada = imagenEjemplo, buscando = false)
+    }
+}
+
+// Frame "Portada · Buscando": se envió la imagen y ENVIAR muestra el indicador de carga.
+@Preview(name = "Portada · Buscando", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPortadaBuscando() {
+    TemaHeroScan {
+        ContenidoPortada(imagenSeleccionada = imagenEjemplo, buscando = true)
     }
 }
