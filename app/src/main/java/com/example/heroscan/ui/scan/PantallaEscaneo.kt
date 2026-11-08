@@ -44,10 +44,12 @@ import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
+import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
 // Pantalla de escaneo: muestra la cámara en vivo (CameraX), el estado de la búsqueda
 // y navega cuando el ViewModel encuentra el cómic.
+// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoEscaneo (con la cámara como parámetro), que solo dibuja.
 @Composable
 fun PantallaEscaneo(
     alVolver: () -> Unit = {},
@@ -77,6 +79,30 @@ fun PantallaEscaneo(
         }
     }
 
+    ContenidoEscaneo(
+        uiState = uiState,
+        codigoDetectado = escaneoViewModel.codigoDetectado,
+        tipoDetectado = escaneoViewModel.tipoCodigoDetectado?.etiqueta,
+        linternaEncendida = escaneoViewModel.linternaEncendida,
+        areaCamara = { modificador -> AreaCamara(viewModel = escaneoViewModel, modifier = modificador) },
+        alVolver = alVolver,
+        alPulsarLinterna = escaneoViewModel::alternarLinterna,
+        alReintentar = escaneoViewModel::reintentar
+    )
+}
+
+// Dibuja Escaneo con lo que recibe; no tiene ViewModel, así las previews pueden mostrarla con datos de ejemplo.
+@Composable
+private fun ContenidoEscaneo(
+    uiState: EscaneoUiState,
+    codigoDetectado: String?,
+    tipoDetectado: String?,
+    linternaEncendida: Boolean,
+    areaCamara: @Composable (Modifier) -> Unit,
+    alVolver: () -> Unit = {},
+    alPulsarLinterna: () -> Unit = {},
+    alReintentar: () -> Unit = {}
+) {
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -91,10 +117,7 @@ fun PantallaEscaneo(
                 fondoIconoDerecho = MaterialTheme.colorScheme.primary
             )
 
-            AreaCamara(
-                viewModel = escaneoViewModel,
-                modifier = Modifier.weight(1f)
-            )
+            areaCamara(Modifier.weight(1f))
 
             when (uiState) {
                 is EscaneoUiState.Buscando -> {
@@ -135,17 +158,17 @@ fun PantallaEscaneo(
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable(onClick = escaneoViewModel::reintentar)
+                            modifier = Modifier.clickable(onClick = alReintentar)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
                 else -> {
                     ContenidoInferiorEscaneo(
-                        codigoDetectado = escaneoViewModel.codigoDetectado,
-                        tipoDetectado = escaneoViewModel.tipoCodigoDetectado?.etiqueta,
-                        linternaEncendida = escaneoViewModel.linternaEncendida,
-                        alPulsarLinterna = escaneoViewModel::alternarLinterna
+                        codigoDetectado = codigoDetectado,
+                        tipoDetectado = tipoDetectado,
+                        linternaEncendida = linternaEncendida,
+                        alPulsarLinterna = alPulsarLinterna
                     )
                 }
             }
@@ -268,6 +291,79 @@ private fun ContenidoInferiorEscaneo(
                 alPulsar = alPulsarLinterna
             )
         }
+    }
+}
+
+// ---------- Previews (solo para ver la pantalla en Android Studio; no se usan en la app) ----------
+
+// Solo para las previews: el área de la cámara con el visor, pero sin cámara (la cámara no se puede dibujar en Android Studio).
+@Composable
+private fun AreaCamaraEjemplo(modifier: Modifier = Modifier) {
+    AreaEscaneo(modifier = modifier) {
+        Visor(
+            mostrarLineaEscaneo = true,
+            modifier = Modifier.size(width = 280.dp, height = 220.dp)
+        )
+    }
+}
+
+// Frame "Escaneo · Apunta al código": la cámara buscando, todavía sin código detectado.
+@androidx.compose.ui.tooling.preview.Preview(name = "Escaneo · Apunta al código", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewEscaneoApuntaAlCodigo() {
+    TemaHeroScan {
+        ContenidoEscaneo(
+            uiState = EscaneoUiState.Escaneando,
+            codigoDetectado = null,
+            tipoDetectado = null,
+            linternaEncendida = false,
+            areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
+        )
+    }
+}
+
+// Frame "Escaneo · Buscando": se detectó un código y se está consultando Metron.
+@androidx.compose.ui.tooling.preview.Preview(name = "Escaneo · Buscando", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewEscaneoBuscando() {
+    TemaHeroScan {
+        ContenidoEscaneo(
+            uiState = EscaneoUiState.Buscando,
+            codigoDetectado = null,
+            tipoDetectado = null,
+            linternaEncendida = false,
+            areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
+        )
+    }
+}
+
+// Frame "Escaneo · Error · No encontrado": el código no corresponde a ningún cómic.
+@androidx.compose.ui.tooling.preview.Preview(name = "Escaneo · Error · No encontrado", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewEscaneoErrorNoEncontrado() {
+    TemaHeroScan {
+        ContenidoEscaneo(
+            uiState = EscaneoUiState.Error("No se encontró ningún cómic con ese código"),
+            codigoDetectado = null,
+            tipoDetectado = null,
+            linternaEncendida = false,
+            areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
+        )
+    }
+}
+
+// Frame "Escaneo · Error · Sin conexión": no hay internet o el servidor tardó demasiado, con REINTENTAR.
+@androidx.compose.ui.tooling.preview.Preview(name = "Escaneo · Error · Sin conexión", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewEscaneoErrorSinConexion() {
+    TemaHeroScan {
+        ContenidoEscaneo(
+            uiState = EscaneoUiState.Error("No hay conexión o el servidor tardó demasiado. Intenta de nuevo.", sinConexion = true),
+            codigoDetectado = null,
+            tipoDetectado = null,
+            linternaEncendida = false,
+            areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
+        )
     }
 }
 
