@@ -117,7 +117,7 @@ class EscaneoViewModel : ViewModel() {
         viewModelScope.launch {
             uiState = try {
                 when (val resultado = repositorio.buscarPorCodigo(codigo, tipo)) {
-                    is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.comic)
+                    is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosResultados(codigo)
                 }
             } catch (e: IOException) {

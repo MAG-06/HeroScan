@@ -5,11 +5,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.heroscan.ui.acceso.PantallaAcceso
 import com.example.heroscan.ui.detail.PantallaDetalleComic
 import com.example.heroscan.ui.home.PantallaInicio
@@ -30,20 +28,20 @@ fun NavegacionHeroScan(
 
     // Primera pantalla: Inicio si ya hay sesión, Acceso si no. remember hace que se decida una sola vez
     // (no en cada redibujo). Como haySesion() responde al instante, no se ve Acceso antes de Inicio.
-    val rutaInicial = remember {
-        if (sesionViewModel.haySesion()) Rutas.INICIO else Rutas.ACCESO
+    val rutaInicial: Any = remember {
+        if (sesionViewModel.haySesion()) RutaInicio else RutaAcceso
     }
 
     NavHost(navController = controladorNavegacion, startDestination = rutaInicial, modifier = modifier) {
 
         // Acceso: al entrar (iniciar sesión o crear cuenta) se va a Inicio y Acceso sale de la pila.
-        // popUpTo(Rutas.ACCESO) { inclusive = true } saca de la pila todo hasta Acceso, incluido Acceso.
+        // popUpTo<RutaAcceso> { inclusive = true } saca de la pila todo hasta Acceso, incluido Acceso.
         // Así Inicio queda como la base de la pila: "atrás" desde Inicio cierra la app y no vuelve a Acceso.
-        composable(Rutas.ACCESO) {
+        composable<RutaAcceso> {
             PantallaAcceso(
                 alIniciarSesion = {
-                    controladorNavegacion.navigate(Rutas.INICIO) {
-                        popUpTo(Rutas.ACCESO) { inclusive = true }
+                    controladorNavegacion.navigate(RutaInicio) {
+                        popUpTo<RutaAcceso> { inclusive = true }
                     }
                 }
             )
@@ -52,88 +50,71 @@ fun NavegacionHeroScan(
         // Inicio: ESCANEAR, BÚSQUEDA y PERFIL son acciones de la barra, así que van con navegarDesdeBarra.
         // Como Inicio es la base de la pila, desde aquí equivale a un navigate normal: la pila queda [Inicio, destino].
         // La tarjeta de escaneo, la sacudida y "Buscar por texto" usan las mismas acciones que la barra.
-        composable(Rutas.INICIO) {
+        composable<RutaInicio> {
             PantallaInicio(
-                alEscanear = { navegarDesdeBarra(controladorNavegacion, Rutas.ESCANEO) },
-                alBuscarPorPortada = { controladorNavegacion.navigate(Rutas.ESCANEO_PORTADA) },
-                alBuscarPorTexto = { navegarDesdeBarra(controladorNavegacion, crearRutaBusqueda()) },
-                alIrAPerfil = { navegarDesdeBarra(controladorNavegacion, Rutas.PERFIL) }
+                alEscanear = { navegarDesdeBarra(controladorNavegacion, RutaEscaneo) },
+                alBuscarPorPortada = { controladorNavegacion.navigate(RutaEscaneoPortada) },
+                alBuscarPorTexto = { navegarDesdeBarra(controladorNavegacion, RutaBusqueda()) },
+                alIrAPerfil = { navegarDesdeBarra(controladorNavegacion, RutaPerfil) }
             )
         }
 
         // Perfil: la pila es [Inicio, Perfil], así que "atrás" vuelve a Inicio.
-        composable(Rutas.PERFIL) {
+        composable<RutaPerfil> {
             PantallaPerfil(
                 // Cerrar sesión: popUpTo(graph.id) { inclusive = true } vacía toda la pila (Inicio y Perfil)
                 // y deja solo Acceso, así "atrás" desde Acceso cierra la app y no vuelve a Perfil.
                 // clearBackStack borra además lo que la barra pudo dejar guardado (saveState) de Perfil e Inicio,
                 // para que la próxima cuenta no vea el Perfil (ni el correo) de la anterior.
                 alCerrarSesion = {
-                    controladorNavegacion.navigate(Rutas.ACCESO) {
+                    controladorNavegacion.navigate(RutaAcceso) {
                         popUpTo(controladorNavegacion.graph.id) { inclusive = true }
                     }
-                    controladorNavegacion.clearBackStack(Rutas.PERFIL)
-                    controladorNavegacion.clearBackStack(Rutas.INICIO)
+                    controladorNavegacion.clearBackStack<RutaPerfil>()
+                    controladorNavegacion.clearBackStack<RutaInicio>()
                 },
-                alIrAInicio = { navegarDesdeBarra(controladorNavegacion, Rutas.INICIO) },
-                alEscanear = { navegarDesdeBarra(controladorNavegacion, Rutas.ESCANEO) },
-                alBuscar = { navegarDesdeBarra(controladorNavegacion, crearRutaBusqueda()) }
+                alIrAInicio = { navegarDesdeBarra(controladorNavegacion, RutaInicio) },
+                alEscanear = { navegarDesdeBarra(controladorNavegacion, RutaEscaneo) },
+                alBuscar = { navegarDesdeBarra(controladorNavegacion, RutaBusqueda()) }
             )
         }
 
-        composable(Rutas.ESCANEO) {
+        composable<RutaEscaneo> {
             PantallaEscaneo(
                 alVolver = { controladorNavegacion.popBackStack() },
-                alEncontrarComic = { comic ->
-                    controladorNavegacion.navigate(crearRutaDetalleComic(comic))
+                alEncontrarComic = { idComic, tipoCodigo ->
+                    controladorNavegacion.navigate(RutaDetalle(idComic, tipoCodigo))
                 },
                 alVariosResultados = { codigo ->
-                    controladorNavegacion.navigate(crearRutaBusqueda(codigo))
+                    controladorNavegacion.navigate(RutaBusqueda(codigo = codigo))
                 }
             )
         }
 
-        composable(Rutas.ESCANEO_PORTADA) {
+        composable<RutaEscaneoPortada> {
             PantallaEscaneoPortada(
                 alVolver = { controladorNavegacion.popBackStack() },
-                alEncontrarComic = { comic ->
-                    controladorNavegacion.navigate(crearRutaDetalleComic(comic))
+                alEncontrarComic = { idComic, tipoCodigo ->
+                    controladorNavegacion.navigate(RutaDetalle(idComic, tipoCodigo))
                 },
                 alVariosResultados = { titulo ->
-                    controladorNavegacion.navigate(crearRutaBusqueda(titulo = titulo))
+                    controladorNavegacion.navigate(RutaBusqueda(titulo = titulo))
                 }
             )
         }
 
         // Los argumentos "codigo" y "titulo" son opcionales: si no vienen, valen null y la búsqueda se abre vacía
-        composable(
-            route = Rutas.BUSQUEDA,
-            arguments = listOf(
-                navArgument(Rutas.ARGUMENTO_CODIGO) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(Rutas.ARGUMENTO_TITULO) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) {
+        composable<RutaBusqueda> {
             PantallaBusqueda(
                 alVolver = { controladorNavegacion.popBackStack() },
-                alEncontrarComic = { comic ->
-                    controladorNavegacion.navigate(crearRutaDetalleComic(comic))
+                alEncontrarComic = { idComic, tipoCodigo ->
+                    controladorNavegacion.navigate(RutaDetalle(idComic, tipoCodigo))
                 }
             )
         }
 
-        composable(Rutas.DETALLE_COMIC) { entradaNavegacion ->
-            val comicJson = entradaNavegacion.arguments?.getString(Rutas.ARGUMENTO_COMIC) ?: ""
-
+        composable<RutaDetalle> {
             PantallaDetalleComic(
-                comic = obtenerComicDeRuta(comicJson),
                 alVolver = { controladorNavegacion.popBackStack() }
             )
         }
@@ -141,14 +122,14 @@ fun NavegacionHeroScan(
 }
 
 // Navega a una pestaña desde la barra inferior (la usan Inicio y Perfil). Así la pila nunca crece al saltar entre pestañas:
-// - popUpTo(Rutas.INICIO) saca todo lo que está encima de Inicio (Inicio se queda) antes de ir al destino,
+// - popUpTo<RutaInicio> saca todo lo que está encima de Inicio (Inicio se queda) antes de ir al destino,
 //   así "atrás" desde cualquier pestaña vuelve a Inicio. saveState = true guarda el estado de lo que se saca.
-//   Se usa Rutas.INICIO fijo y no el inicio del grafo, porque el inicio del grafo puede ser Acceso.
+//   Se usa RutaInicio fijo y no el inicio del grafo, porque el inicio del grafo puede ser Acceso.
 // - launchSingleTop = true evita poner dos veces la misma pantalla si ya está arriba (por ejemplo, Inicio desde Perfil).
 // - restoreState = true recupera ese estado guardado al volver a la pestaña.
-private fun navegarDesdeBarra(controlador: NavHostController, ruta: String) {
+private fun navegarDesdeBarra(controlador: NavHostController, ruta: Any) {
     controlador.navigate(ruta) {
-        popUpTo(Rutas.INICIO) {
+        popUpTo<RutaInicio> {
             saveState = true
         }
         launchSingleTop = true

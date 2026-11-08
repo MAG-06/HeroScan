@@ -1,6 +1,6 @@
 package com.example.heroscan.ui.scan
 
-import com.example.heroscan.model.Comic
+import com.example.heroscan.model.TipoCodigo
 
 // Estados posibles de la pantalla de búsqueda por portada.
 sealed interface PortadaUiState {
@@ -10,8 +10,8 @@ sealed interface PortadaUiState {
     // Se envió la portada y se está esperando a la IA y a Metron
     object Buscando : PortadaUiState
 
-    // La portada corresponde a un solo cómic
-    data class Encontrado(val comic: Comic) : PortadaUiState
+    // Un solo cómic: su id y tipo de código, para abrir el detalle.
+    data class Encontrado(val idComic: Int, val tipoCodigo: TipoCodigo) : PortadaUiState
 
     // La portada corresponde a varios cómics: se guarda el título para abrir la búsqueda con él
     data class VariosResultados(val titulo: String) : PortadaUiState

@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.heroscan.R
@@ -467,5 +468,68 @@ fun BotonDialogo(
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(text = texto, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// Indicador de carga con un texto debajo. Lo usan Búsqueda ("Buscando cómic...") y Detalle ("Cargando cómic...").
+@Composable
+fun ContenidoCargando(texto: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = texto,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp
+        )
+    }
+}
+
+// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Detalle); si no, no lo muestra (Búsqueda).
+@Composable
+fun ContenidoError(
+    mensaje: String,
+    sinConexion: Boolean,
+    modifier: Modifier = Modifier,
+    alReintentar: (() -> Unit)? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = if (sinConexion) "Problema de conexión" else "No se encontró el cómic",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = mensaje,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center
+        )
+        if (alReintentar != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "REINTENTAR",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(onClick = alReintentar)
+            )
+        }
     }
 }
