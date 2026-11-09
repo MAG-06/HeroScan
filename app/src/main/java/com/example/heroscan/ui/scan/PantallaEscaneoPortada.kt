@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,8 @@ fun PantallaEscaneoPortada(
     val uiState = portadaViewModel.uiState
     val context = LocalContext.current
 
-    var imagenSeleccionada by remember { mutableStateOf<Uri?>(null) }
+    // rememberSaveable: la imagen elegida sigue ahí al girar el celular y al volver del detalle o de la lista (solo se guarda su Uri, no la imagen).
+    var imagenSeleccionada by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     // Abre la galería y guarda la imagen que elija el usuario
     val selectorGaleria = rememberLauncherForActivityResult(
@@ -125,7 +127,8 @@ fun PantallaEscaneoPortada(
                     portadaViewModel.enviarPortada(imagenBase64)
                 } catch (e: Exception) {
                     alcanceCorrutina.launch {
-                        estadoSnackbar.showSnackbar(e.message ?: "No se pudo leer la imagen")
+                        // Texto fijo: si Android ya no deja leer la imagen (por ejemplo, después de cerrar la app en segundo plano), su error viene en inglés.
+                        estadoSnackbar.showSnackbar("No se pudo leer la imagen")
                     }
                 }
             }
