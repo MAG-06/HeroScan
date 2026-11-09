@@ -32,7 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -266,7 +266,8 @@ private fun BloqueTituloComic(
 // Lista de creadores. Muestra 3 al inicio y permite expandir para ver todos.
 @Composable
 private fun SeccionCreditos(creadores: List<String>) {
-    var expandido by remember { mutableStateOf(false) }
+    // rememberSaveable: "Ver todos" sigue abierto si se gira el celular.
+    var expandido by rememberSaveable { mutableStateOf(false) }
 
     SeccionInformacion(
         icono = Icons.Filled.Edit,
