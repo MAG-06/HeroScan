@@ -345,7 +345,8 @@ private fun ContenidoVariosResultados(
         )
         Spacer(modifier = Modifier.height(12.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(resultados) { comic ->
+            // key: le dice a Compose qué fila es cuál por el id del cómic, no por su posición en la lista.
+            items(resultados, key = { it.id }) { comic ->
                 TarjetaResultadoComic(comic = comic, alPulsar = { alSeleccionar(comic.id) })
             }
         }

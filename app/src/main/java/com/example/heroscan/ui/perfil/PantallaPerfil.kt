@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,8 +54,8 @@ import com.example.heroscan.ui.components.BloqueTituloPestana
 import com.example.heroscan.ui.components.BotonDialogo
 import com.example.heroscan.ui.components.CapaDialogo
 import com.example.heroscan.ui.components.LogoHeroScan
-import com.example.heroscan.ui.components.MENSAJE_PERMISO_CAMARA
 import com.example.heroscan.ui.components.PestanaInferior
+import com.example.heroscan.ui.components.mostrarAvisoPermisoCamara
 import com.example.heroscan.ui.components.rememberPedirPermisoCamara
 import com.example.heroscan.ui.theme.TemaHeroScan
 import kotlinx.coroutines.launch
@@ -74,13 +75,14 @@ fun PantallaPerfil(
 
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
+    val contexto = LocalContext.current
 
     // Pide el permiso de cámara: si lo conceden va a escanear, si no muestra el mismo aviso que Inicio.
     val pedirPermisoCamara = rememberPedirPermisoCamara(
         alConceder = alEscanear,
         alRechazar = {
             alcanceCorrutina.launch {
-                estadoSnackbar.showSnackbar(MENSAJE_PERMISO_CAMARA)
+                mostrarAvisoPermisoCamara(estadoSnackbar, contexto)
             }
         }
     )
