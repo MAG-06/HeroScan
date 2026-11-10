@@ -22,8 +22,8 @@ import java.io.IOException
 
 // Maneja la pantalla de búsqueda: guarda el texto y el filtro, decide qué tipo de búsqueda hacer
 // y pide los cómics al repositorio.
-// Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta.
-class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
+// Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta, y aquí también se guardan el texto y el filtro.
+class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewModel() {
 
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
@@ -33,10 +33,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     var uiState: BusquedaUiState by mutableStateOf(BusquedaUiState.Inicial)
         private set
 
-    var textoBusqueda by mutableStateOf("")
+    // El texto y el filtro empiezan con lo guardado en el SavedStateHandle (si no hay nada, con su valor inicial): así sobreviven a que Android cierre la app en segundo plano.
+    var textoBusqueda by mutableStateOf(estadoGuardado.get<String>(CLAVE_TEXTO) ?: "")
         private set
 
-    var filtroSeleccionado by mutableStateOf(filtros.first())
+    var filtroSeleccionado by mutableStateOf(estadoGuardado.get<String>(CLAVE_FILTRO) ?: filtros.first())
         private set
 
     // Tipo del último código buscado. Se guarda para usarlo cuando el usuario elige un cómic de la lista,
@@ -48,29 +49,34 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     private var ultimosResultados: List<ComicResumen> = emptyList()
 
     // "init" se ejecuta una sola vez, cuando se crea el ViewModel.
-    // Si la pantalla se abrió desde el escáner, la ruta trae un código y se busca automáticamente.
+    // Si ya hay un texto guardado, Android cerró la app en segundo plano: se deja lo guardado y no se busca, para no gastar peticiones a Metron.
+    // Si no, y la pantalla se abrió desde el escáner, la ruta trae un código y se busca automáticamente.
     // Si se abrió desde la búsqueda por portada, trae un título: se pone el filtro TÍTULO y se busca.
     // El código tiene prioridad: si llegan los dos, se busca por código.
     init {
         val ruta = estadoGuardado.toRoute<RutaBusqueda>()
-        if (ruta.codigo != null) {
-            textoBusqueda = ruta.codigo
-            buscarPorCodigo()
-        } else if (ruta.titulo != null) {
-            textoBusqueda = ruta.titulo
-            filtroSeleccionado = "TÍTULO"
-            buscarPorTitulo()
+        if (estadoGuardado.get<String>(CLAVE_TEXTO) == null) {
+            if (ruta.codigo != null) {
+                cambiarTextoBusqueda(ruta.codigo)
+                buscarPorCodigo()
+            } else if (ruta.titulo != null) {
+                cambiarTextoBusqueda(ruta.titulo)
+                seleccionarFiltro("TÍTULO")
+                buscarPorTitulo()
+            }
         }
     }
 
-    // Actualiza el texto escrito en la barra de búsqueda.
+    // Actualiza el texto escrito en la barra de búsqueda y lo copia al SavedStateHandle.
     fun cambiarTextoBusqueda(texto: String) {
         textoBusqueda = texto
+        estadoGuardado[CLAVE_TEXTO] = texto
     }
 
-    // Cambia el filtro seleccionado.
+    // Cambia el filtro seleccionado y lo copia al SavedStateHandle.
     fun seleccionarFiltro(filtro: String) {
         filtroSeleccionado = filtro
+        estadoGuardado[CLAVE_FILTRO] = filtro
     }
 
     // Lanza una búsqueda nueva según el filtro seleccionado.
@@ -193,5 +199,11 @@ class BusquedaViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
         } else {
             BusquedaUiState.Inicial
         }
+    }
+
+    // Nombres con los que se guardan el texto y el filtro en el SavedStateHandle.
+    private companion object {
+        const val CLAVE_TEXTO = "busqueda_texto"
+        const val CLAVE_FILTRO = "busqueda_filtro"
     }
 }
