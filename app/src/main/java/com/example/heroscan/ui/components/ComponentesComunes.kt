@@ -1,6 +1,10 @@
 package com.example.heroscan.ui.components
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -42,6 +46,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -402,6 +409,25 @@ fun rememberPedirPermisoCamara(alConceder: () -> Unit, alRechazar: () -> Unit): 
     }
 
     return { solicitudPermisoCamara.launch(Manifest.permission.CAMERA) }
+}
+
+// Avisa que falta el permiso de cámara, con la acción AJUSTES para abrir los ajustes de HeroScan.
+// Hace falta porque, si el usuario niega el permiso varias veces, Android deja de mostrar el diálogo.
+// Si ya hay un aviso en pantalla no agrega otro, para que no se acumulen al tocar o agitar varias veces.
+suspend fun mostrarAvisoPermisoCamara(estadoSnackbar: SnackbarHostState, contexto: Context) {
+    if (estadoSnackbar.currentSnackbarData != null) return
+
+    val resultado = estadoSnackbar.showSnackbar(
+        message = MENSAJE_PERMISO_CAMARA,
+        actionLabel = "AJUSTES",
+        duration = SnackbarDuration.Long
+    )
+
+    if (resultado == SnackbarResult.ActionPerformed) {
+        contexto.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", contexto.packageName, null))
+        )
+    }
 }
 
 // Capa de diálogo: oscurece toda la pantalla y pone encima una tarjeta centrada con el contenido que se le pase.

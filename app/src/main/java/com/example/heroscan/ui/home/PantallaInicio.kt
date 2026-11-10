@@ -59,8 +59,8 @@ import com.example.heroscan.ui.components.BarraNavegacionInferior
 import com.example.heroscan.ui.components.BloqueTituloPestana
 import com.example.heroscan.ui.components.BotonAccionPrincipal
 import com.example.heroscan.ui.components.LogoHeroScan
-import com.example.heroscan.ui.components.MENSAJE_PERMISO_CAMARA
 import com.example.heroscan.ui.components.PestanaInferior
+import com.example.heroscan.ui.components.mostrarAvisoPermisoCamara
 import com.example.heroscan.ui.components.rememberPedirPermisoCamara
 import com.example.heroscan.ui.theme.CapaOscura
 import com.example.heroscan.ui.theme.TemaHeroScan
@@ -80,13 +80,14 @@ fun PantallaInicio(
 
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
+    val contexto = LocalContext.current
 
     // Pide el permiso de cámara: si lo conceden va a escanear, si no muestra un aviso
     val pedirPermisoCamara = rememberPedirPermisoCamara(
         alConceder = alEscanear,
         alRechazar = {
             alcanceCorrutina.launch {
-                estadoSnackbar.showSnackbar(MENSAJE_PERMISO_CAMARA)
+                mostrarAvisoPermisoCamara(estadoSnackbar, contexto)
             }
         }
     )
