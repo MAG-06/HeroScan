@@ -298,7 +298,7 @@ private fun FormularioIniciarSesion(
             Text(
                 text = "¿Olvidaste tu contraseña?",
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -453,7 +453,7 @@ private fun MedidorFortaleza(evaluacion: EvaluacionClave) {
         Text(
             text = "Fortaleza: ${evaluacion.nivel.etiqueta} (≈ ${evaluacion.bits} bits)",
             color = colorNivel,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium
         )
 
@@ -464,7 +464,7 @@ private fun MedidorFortaleza(evaluacion: EvaluacionClave) {
                     Text(
                         text = consejo,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         lineHeight = 1.5.em
                     )
                 }
@@ -479,7 +479,7 @@ private fun BloqueTituloAcceso(titulo: String, subtitulo: String) {
     Text(
         text = titulo,
         color = MaterialTheme.colorScheme.onBackground,
-        fontSize = 36.sp,
+        style = MaterialTheme.typography.displayLarge,
         fontWeight = FontWeight.Black,
         lineHeight = 1.05.em,
         letterSpacing = (-0.5).sp
@@ -488,7 +488,7 @@ private fun BloqueTituloAcceso(titulo: String, subtitulo: String) {
     Text(
         text = subtitulo,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 14.sp,
+        style = MaterialTheme.typography.titleMedium,
         lineHeight = 1.5.em
     )
 }
@@ -517,7 +517,7 @@ private fun CampoAcceso(
         Text(
             text = etiqueta,
             color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -585,7 +585,7 @@ private fun CampoAcceso(
             Text(
                 text = textoAyuda,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 lineHeight = 1.5.em
             )
         }
@@ -594,7 +594,7 @@ private fun CampoAcceso(
             Text(
                 text = textoError,
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 lineHeight = 1.5.em
             )
         }
@@ -623,7 +623,7 @@ private fun TarjetaErrorAcceso(mensaje: String) {
         Text(
             text = mensaje,
             color = MaterialTheme.colorScheme.error,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             lineHeight = 1.5.em
         )
     }
@@ -635,7 +635,7 @@ private fun TextoBloqueo(segundos: Int) {
     Text(
         text = "Demasiados intentos. Reintenta en $segundos s.",
         color = MaterialTheme.colorScheme.error,
-        fontSize = 14.sp,
+        style = MaterialTheme.typography.titleMedium,
         lineHeight = 1.5.em
     )
 }
@@ -675,7 +675,7 @@ private fun BotonAcceso(
         }
         Text(
             text = texto,
-            fontSize = 20.sp,
+            style = MaterialTheme.typography.headlineMedium.copy(lineHeight = 20.sp),
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = 0.5.sp
         )
@@ -698,7 +698,7 @@ private fun EnlaceInferiorAcceso(
         Text(
             text = pregunta,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             lineHeight = 1.5.em
         )
         // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
@@ -710,7 +710,7 @@ private fun EnlaceInferiorAcceso(
             Text(
                 text = accion,
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 lineHeight = 1.5.em
             )
@@ -737,7 +737,7 @@ private fun DialogoRecuperacion(
         Text(
             text = "Recuperar contraseña",
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 24.sp,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.ExtraBold,
             lineHeight = 1.1.em
         )
@@ -761,7 +761,7 @@ private fun DialogoRecuperacion(
                 "Si el correo tiene una cuenta, te llegará un enlace."
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             lineHeight = 1.5.em
         )
 
@@ -769,7 +769,7 @@ private fun DialogoRecuperacion(
             Text(
                 text = estado.mensaje,
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium,
                 lineHeight = 1.5.em
             )
         }

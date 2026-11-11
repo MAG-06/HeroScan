@@ -138,7 +138,7 @@ private fun ContenidoInicio(
                     Text(
                         text = "OTRAS FORMAS DE BUSCAR",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
@@ -226,7 +226,7 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit, mostrarPistaAgitar: Boolean) 
                     Text(
                         text = "CÁMARA INTELIGENTE",
                         color = MaterialTheme.colorScheme.secondary,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
@@ -237,13 +237,13 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit, mostrarPistaAgitar: Boolean) 
                 Text(
                     text = "ESCANEAR CÓMIC",
                     color = Color.White,
-                    fontSize = 26.sp,
+                    style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = "Apunta al código de barras del cómic",
                     color = Color.White,
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.titleSmall
                 )
 
                 // El chip solo aparece si el teléfono tiene acelerómetro; sin él, el botón queda a 16 dp del subtítulo.
@@ -294,9 +294,9 @@ private fun TarjetaOpcionBusqueda(
                 Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -355,7 +355,7 @@ private fun PistaAgitar() {
         Text(
             text = "O AGITA EL TELÉFONO",
             color = MaterialTheme.colorScheme.primary,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             lineHeight = 14.sp
         )

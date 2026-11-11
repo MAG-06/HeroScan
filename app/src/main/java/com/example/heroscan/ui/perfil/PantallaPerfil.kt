@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.heroscan.ui.components.BarraNavegacionInferior
 import com.example.heroscan.ui.components.BloqueTituloPestana
@@ -196,7 +195,7 @@ private fun TarjetaPerfil(correo: String, alPulsarCerrarSesion: () -> Unit) {
             Text(
                 text = correo,
                 color = Color.White,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Start
             )
@@ -204,7 +203,7 @@ private fun TarjetaPerfil(correo: String, alPulsarCerrarSesion: () -> Unit) {
             Text(
                 text = "Correo asociado a tu cuenta.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Start
             )
         }
@@ -231,7 +230,7 @@ private fun BotonCerrarSesion(alPulsar: () -> Unit) {
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = "CERRAR SESIÓN", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = "CERRAR SESIÓN", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -243,7 +242,7 @@ private fun DialogoCerrarSesion(alCancelar: () -> Unit, alConfirmar: () -> Unit)
         Text(
             text = "¿Cerrar sesión?",
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 24.sp,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.ExtraBold,
             lineHeight = 1.1.em
         )
@@ -251,7 +250,7 @@ private fun DialogoCerrarSesion(alCancelar: () -> Unit, alConfirmar: () -> Unit)
         Text(
             text = "Tendrás que volver a ingresar tu correo y contraseña.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             lineHeight = 1.5.em
         )
 
