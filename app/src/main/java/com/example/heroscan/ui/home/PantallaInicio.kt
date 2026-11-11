@@ -117,15 +117,15 @@ private fun ContenidoInicio(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Column {
-                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp)) {
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
 
                     LogoHeroScan()
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     BloqueTituloPestana(
                         titulo = "¡ENCUENTRA TU PRÓXIMO CÓMIC!",
                         subtitulo = "Escanea, busca y descubre."
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     TarjetaEscaneo(alEscanear = alEscanear)
 
@@ -137,10 +137,10 @@ private fun ContenidoInicio(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         TarjetaOpcionBusqueda(
                             modifier = Modifier.weight(1f),
@@ -206,8 +206,8 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                 .background(CapaOscura)
         )
 
-        // Capa 3: todo el contenido (ícono, textos, botón), con el margen interno de 20dp
-        Box(modifier = Modifier.padding(20.dp)) {
+        // Capa 3: todo el contenido (ícono, textos, botón), con el margen interno de 16dp
+        Box(modifier = Modifier.padding(16.dp)) {
 
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -217,7 +217,7 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                         tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "CÁMARA INTELIGENTE",
                         color = MaterialTheme.colorScheme.secondary,
@@ -241,7 +241,7 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                     fontSize = 13.sp
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 PistaAgitar()
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -275,7 +275,7 @@ private fun TarjetaOpcionBusqueda(
     ) {
         val colorContenido = if (habilitada) colorIcono else MaterialTheme.colorScheme.onSurfaceVariant
 
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -285,9 +285,9 @@ private fun TarjetaOpcionBusqueda(
             ) {
                 Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(18.dp))
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
     }

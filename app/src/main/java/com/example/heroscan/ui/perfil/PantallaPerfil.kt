@@ -127,12 +127,12 @@ private fun ContenidoPerfil(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Column {
-                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp)) {
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
 
                     LogoHeroScan()
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     BloqueTituloPestana(titulo = "PERFIL", subtitulo = "Gestiona tu cuenta y sesión.")
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     TarjetaPerfil(correo = correo, alPulsarCerrarSesion = alPulsarCerrarSesion)
                 }

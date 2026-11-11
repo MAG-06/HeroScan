@@ -128,13 +128,13 @@ private fun ContenidoBusqueda(
                 alBuscar = alBuscar
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 filtros.forEach { filtro ->
@@ -229,7 +229,7 @@ private fun CampoBusqueda(
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
     )
 }
 
@@ -317,7 +317,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
             lineHeight = 26.sp
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Busca por título, personaje, UPC o código de barras EAN para encontrar tu cómic.",
@@ -336,15 +336,15 @@ private fun ContenidoVariosResultados(
     alSeleccionar: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(horizontal = 20.dp)) {
+    Column(modifier = modifier.padding(horizontal = 16.dp)) {
         Text(
             text = "Se encontraron ${resultados.size} resultados",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // key: le dice a Compose qué fila es cuál por el id del cómic, no por su posición en la lista.
             items(resultados, key = { it.id }) { comic ->
                 TarjetaResultadoComic(comic = comic, alPulsar = { alSeleccionar(comic.id) })
@@ -365,7 +365,7 @@ private fun TarjetaResultadoComic(
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = alPulsar)
-            .padding(12.dp),
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (comic.portadaUrl.isNotEmpty()) {
@@ -392,7 +392,7 @@ private fun TarjetaResultadoComic(
                 )
             }
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(
                 text = "${comic.titulo} #${comic.numero}",
@@ -403,7 +403,7 @@ private fun TarjetaResultadoComic(
                 overflow = TextOverflow.Ellipsis
             )
             if (comic.fechaPortada.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = comic.fechaPortada,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
