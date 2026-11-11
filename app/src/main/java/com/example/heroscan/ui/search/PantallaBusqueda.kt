@@ -1,7 +1,6 @@
 package com.example.heroscan.ui.search
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +26,8 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -233,37 +234,38 @@ private fun CampoBusqueda(
     )
 }
 
-// Chip de filtro: relleno de color si está seleccionado, solo con borde si no.
+// Chip de filtro: FilterChip de Material 3 (como en la guía MercadoLocal). Trae el área táctil de 48 dp y le avisa a TalkBack si está seleccionado; se ve como antes: cian si está elegido, solo con borde si no.
 @Composable
 private fun ChipFiltro(
     texto: String,
     seleccionado: Boolean,
     alPulsar: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .then(
-                if (seleccionado) {
-                    Modifier.background(MaterialTheme.colorScheme.primary)
-                } else {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        shape = RoundedCornerShape(50)
-                    )
-                }
+    FilterChip(
+        selected = seleccionado,
+        onClick = alPulsar,
+        label = {
+            Text(
+                text = texto,
+                color = if (seleccionado) Color.Black else Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
-            .clickable(onClick = alPulsar)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = texto,
-            color = if (seleccionado) Color.Black else Color.White,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
+        },
+        shape = RoundedCornerShape(50),
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            selectedContainerColor = MaterialTheme.colorScheme.primary
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = seleccionado,
+            borderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedBorderColor = Color.Transparent,
+            borderWidth = 1.dp
         )
-    }
+    )
 }
 
 // Contenido que se muestra antes de buscar: ícono grande y un texto de ayuda.

@@ -3,10 +3,10 @@ package com.example.heroscan.ui.acceso
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -286,15 +287,20 @@ private fun FormularioIniciarSesion(
             habilitado = !cargando
         )
 
-        Text(
-            text = "¿Olvidaste tu contraseña?",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.End)
-                .clickable(enabled = !cargando, onClick = alOlvidarClave)
-        )
+        // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
+        TextButton(
+            onClick = alOlvidarClave,
+            enabled = !cargando,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text(
+                text = "¿Olvidaste tu contraseña?",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         // Entre el enlace y el botón va la tarjeta de error o el texto de bloqueo, según el estado.
         if (uiState is AccesoUiState.Error) {
@@ -685,7 +691,8 @@ private fun EnlaceInferiorAcceso(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = pregunta,
@@ -693,14 +700,20 @@ private fun EnlaceInferiorAcceso(
             fontSize = 14.sp,
             lineHeight = 1.5.em
         )
-        Text(
-            text = accion,
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 1.5.em,
-            modifier = Modifier.clickable(enabled = habilitado, onClick = alPulsar)
-        )
+        // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
+        TextButton(
+            onClick = alPulsar,
+            enabled = habilitado,
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Text(
+                text = accion,
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 1.5.em
+            )
+        }
     }
 }
 
