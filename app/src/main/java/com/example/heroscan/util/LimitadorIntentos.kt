@@ -8,17 +8,20 @@ private const val ESPERA_INICIAL_MS = 30_000L
 private const val ESPERA_MAXIMA_MS = 15 * 60_000L
 
 // Cuenta los inicios de sesión fallidos seguidos y bloquea un tiempo cuando hay demasiados.
-// Es una clase pura (sin Android) y vive en memoria: si se cierra la app, vuelve a empezar.
+// Es una clase pura (sin Android): no guarda nada; AccesoViewModel guarda sus valores con AlmacenIntentos y los restaura al abrir.
 //
 // Nota para quien viene de Java: "() -> Long" es un tipo función, es decir, "una función sin parámetros
 // que devuelve un Long" (parecido a un Supplier<Long> de Java). "System::currentTimeMillis" es una referencia
 // a esa función de Java, y es el valor por defecto: el reloj real. En una prueba se puede pasar un reloj falso.
 class LimitadorIntentos(private val reloj: () -> Long = System::currentTimeMillis) {
 
-    private var fallosSeguidos = 0
+    // Fallos seguidos. Se puede leer desde afuera, pero solo esta clase lo cambia.
+    var fallosSeguidos = 0
+        private set
 
     // Momento (en milisegundos) hasta el que está bloqueado. 0 = sin bloqueo.
-    private var bloqueadoHastaMs = 0L
+    var bloqueadoHastaMs = 0L
+        private set
 
     // Indica si se puede intentar ahora (no hay bloqueo o ya terminó).
     fun puedeIntentar(): Boolean {
@@ -52,6 +55,12 @@ class LimitadorIntentos(private val reloj: () -> Long = System::currentTimeMilli
         val restantes = FALLO_QUE_BLOQUEA - fallosSeguidos
         if (restantes < 0) return 0
         return restantes
+    }
+
+    // Pone los fallos y la hora del bloqueo que se habían guardado (al volver a abrir la app). La espera nunca pasa de 15 minutos, por si el reloj del teléfono se atrasó.
+    fun restaurar(fallos: Int, hastaMs: Long) {
+        fallosSeguidos = fallos
+        bloqueadoHastaMs = minOf(hastaMs, reloj() + ESPERA_MAXIMA_MS)
     }
 
     // Calcula la espera según los fallos: 30 s en el 5.º, 60 s en el 6.º, 120 s en el 7.º… sin pasar de 15 min.

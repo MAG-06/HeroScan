@@ -95,7 +95,10 @@ fun PantallaInicio(
         }
     )
 
-    DetectorSacudida(alSacudir = pedirPermisoCamara)
+    // Solo escucha el acelerómetro si el teléfono lo tiene.
+    if (hayAcelerometro) {
+        DetectorSacudida(alSacudir = pedirPermisoCamara)
+    }
 
     ContenidoInicio(
         estadoSnackbar = estadoSnackbar,

@@ -154,4 +154,41 @@ class LimitadorIntentosTest {
         limitador.registrarExito()
         assertEquals(5, limitador.intentosRestantesAntesDeBloqueo())
     }
+
+    // Comprueba que al restaurar un bloqueo que todavía no termina, sigue bloqueado con los segundos que faltaban.
+    @Test
+    fun restaurarBloqueoVigenteSigueBloqueado() {
+        ahora = 10_000L
+        limitador.restaurar(5, 30_000L)
+        assertFalse(limitador.puedeIntentar())
+        assertEquals(20, limitador.segundosDeEspera())
+        assertEquals(0, limitador.intentosRestantesAntesDeBloqueo())
+    }
+
+    // Comprueba que al restaurar un bloqueo ya terminado se puede intentar y el siguiente fallo cuenta como el 6.º (60 segundos).
+    @Test
+    fun restaurarBloqueoVencidoSigueContandoFallos() {
+        limitador.restaurar(5, 30_000L)
+        ahora = 30_000L
+        assertTrue(limitador.puedeIntentar())
+        limitador.registrarFallo()
+        assertEquals(60, limitador.segundosDeEspera())
+    }
+
+    // Comprueba que los valores leídos de un limitador, restaurados en otro, dan el mismo bloqueo (como guardar y volver a abrir).
+    @Test
+    fun valoresLeidosSeRestauranIgual() {
+        fallar(5)
+        val otro = LimitadorIntentos(::relojFalso)
+        otro.restaurar(limitador.fallosSeguidos, limitador.bloqueadoHastaMs)
+        assertEquals(5, otro.fallosSeguidos)
+        assertEquals(30, otro.segundosDeEspera())
+    }
+
+    // Comprueba que una espera restaurada de más de 15 minutos (reloj atrasado) se limita a 15 minutos (900 segundos).
+    @Test
+    fun restaurarConEsperaMayorDeQuinceMinutosSeLimita() {
+        limitador.restaurar(10, ahora + 60 * 60_000L)
+        assertEquals(900, limitador.segundosDeEspera())
+    }
 }
