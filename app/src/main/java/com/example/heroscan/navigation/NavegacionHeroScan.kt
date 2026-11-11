@@ -87,6 +87,9 @@ fun NavegacionHeroScan(
                 },
                 alVariosResultados = { codigo ->
                     controladorNavegacion.navigate(RutaBusqueda(codigo = codigo))
+                },
+                alVariosPorTitulo = { titulo ->
+                    controladorNavegacion.navigate(RutaBusqueda(titulo = titulo))
                 }
             )
         }

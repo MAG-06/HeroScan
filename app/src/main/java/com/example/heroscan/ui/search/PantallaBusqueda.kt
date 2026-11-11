@@ -166,6 +166,9 @@ private fun ContenidoBusqueda(
                 is BusquedaUiState.Cargando -> {
                     ContenidoCargando(texto = "Buscando cómic...", modifier = Modifier.weight(1f))
                 }
+                is BusquedaUiState.CargandoEnLaWeb -> {
+                    ContenidoCargando(texto = "Buscando en la web...", modifier = Modifier.weight(1f))
+                }
                 is BusquedaUiState.Error -> {
                     ContenidoError(
                         mensaje = uiState.mensaje,
@@ -461,6 +464,20 @@ private fun PreviewBusquedaCargando() {
             textoBusqueda = "Batman",
             filtros = filtrosEjemplo,
             filtroSeleccionado = "TÍTULO"
+        )
+    }
+}
+
+// Frame "Búsqueda · Buscando en la web": buscando un ISBN-13 escrito.
+@Preview(name = "Búsqueda · Buscando en la web", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewBusquedaBuscandoEnLaWeb() {
+    TemaHeroScan {
+        ContenidoBusqueda(
+            uiState = BusquedaUiState.CargandoEnLaWeb,
+            textoBusqueda = "9788447104772",
+            filtros = filtrosEjemplo,
+            filtroSeleccionado = "CÓDIGO"
         )
     }
 }

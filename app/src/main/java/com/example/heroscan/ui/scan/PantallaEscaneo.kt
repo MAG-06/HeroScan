@@ -57,6 +57,7 @@ fun PantallaEscaneo(
     alVolver: () -> Unit = {},
     alEncontrarComic: (Int, TipoCodigo) -> Unit = { _, _ -> },
     alVariosResultados: (String) -> Unit = {},
+    alVariosPorTitulo: (String) -> Unit = {},
     escaneoViewModel: EscaneoViewModel = viewModel()
 ) {
     val uiState by escaneoViewModel.uiState.collectAsStateWithLifecycle()
@@ -78,6 +79,12 @@ fun PantallaEscaneo(
             is EscaneoUiState.VariosResultados -> {
                 vibrarDispositivo(context)
                 alVariosResultados(estado.codigo)
+                escaneoViewModel.prepararNuevoEscaneo()
+            }
+
+            is EscaneoUiState.VariosPorTitulo -> {
+                vibrarDispositivo(context)
+                alVariosPorTitulo(estado.titulo)
                 escaneoViewModel.prepararNuevoEscaneo()
             }
 
@@ -126,7 +133,7 @@ private fun ContenidoEscaneo(
             areaCamara(Modifier.weight(1f))
 
             when (uiState) {
-                is EscaneoUiState.Buscando -> {
+                is EscaneoUiState.Buscando, is EscaneoUiState.BuscandoEnLaWeb -> {
                     PanelInferior {
                         Spacer(modifier = Modifier.height(16.dp))
                         CircularProgressIndicator(
@@ -135,7 +142,7 @@ private fun ContenidoEscaneo(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Buscando cómic...",
+                            text = if (uiState is EscaneoUiState.BuscandoEnLaWeb) "Buscando en la web..." else "Buscando cómic...",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -337,6 +344,21 @@ private fun PreviewEscaneoBuscando() {
     TemaHeroScan {
         ContenidoEscaneo(
             uiState = EscaneoUiState.Buscando,
+            codigoDetectado = null,
+            tipoDetectado = null,
+            linternaEncendida = false,
+            areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
+        )
+    }
+}
+
+// Frame "Escaneo · Buscando en la web": se detectó un ISBN-13 y se está buscando en la web.
+@androidx.compose.ui.tooling.preview.Preview(name = "Escaneo · Buscando en la web", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewEscaneoBuscandoEnLaWeb() {
+    TemaHeroScan {
+        ContenidoEscaneo(
+            uiState = EscaneoUiState.BuscandoEnLaWeb,
             codigoDetectado = null,
             tipoDetectado = null,
             linternaEncendida = false,

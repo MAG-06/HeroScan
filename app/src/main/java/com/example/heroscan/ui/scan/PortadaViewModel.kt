@@ -16,7 +16,7 @@ import java.io.IOException
 // No recibe Context: la pantalla convierte la imagen antes y solo le pasa el texto Base64.
 class PortadaViewModel : ViewModel() {
 
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
     private val _uiState = MutableStateFlow<PortadaUiState>(PortadaUiState.Inicial)
     val uiState: StateFlow<PortadaUiState> = _uiState

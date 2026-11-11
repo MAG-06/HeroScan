@@ -3,6 +3,7 @@ package com.example.heroscan.network
 import com.example.heroscan.BuildConfig
 import com.example.heroscan.network.api.GeminiApi
 import com.example.heroscan.network.api.MetronApi
+import com.example.heroscan.network.api.TavilyApi
 import com.example.heroscan.network.api.TraduccionApi
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -10,7 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-// Configura las instancias de Retrofit (Metron con token de autenticación, MyMemory y Gemini con su clave en el header x-goog-api-key) y expone sus APIs.
+// Configura las instancias de Retrofit (Metron con token de autenticación, MyMemory, Gemini con su clave en el header x-goog-api-key y Tavily con su clave en el header Authorization) y expone sus APIs.
 object ClienteRetrofit {
 
     private const val URL_BASE_METRON = "https://metron.cloud/"
@@ -70,5 +71,29 @@ object ClienteRetrofit {
             .addConverterFactory(GsonConverterFactory.create()).build()
 
     val geminiApi: GeminiApi = retrofitGemini.create(GeminiApi::class.java)
+
+    // === TAVILY ===
+
+    // Dirección base de la API de Tavily (búsqueda web).
+    private const val URL_BASE_TAVILY = "https://api.tavily.com/"
+
+    // Cliente HTTP que agrega la clave de Tavily a cada petición (header Authorization: Bearer).
+    private val clienteTavily: OkHttpClient =
+        OkHttpClient.Builder().addInterceptor(Interceptor { cadena ->
+
+            val peticion = cadena.request().newBuilder().header(
+                "Authorization",
+                "Bearer ${BuildConfig.TAVILY_API_KEY}"
+            )
+                .build()
+            cadena.proceed(peticion)
+        })
+            .build()
+
+    private val retrofitTavily: Retrofit =
+        Retrofit.Builder().baseUrl(URL_BASE_TAVILY).client(clienteTavily)
+            .addConverterFactory(GsonConverterFactory.create()).build()
+
+    val tavilyApi: TavilyApi = retrofitTavily.create(TavilyApi::class.java)
 
 }

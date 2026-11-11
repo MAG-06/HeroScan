@@ -10,10 +10,11 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 
 ## Funcionalidades
 
-- **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna.
+- **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna. Si el código es un ISBN-13 (los tomos en español), la app lo busca en la web (ver "Buscar un ISBN en la web").
 - **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro). El chip "O AGITA EL TELÉFONO" solo aparece si el teléfono tiene acelerómetro.
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
-- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos).
+- **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés y el número. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
+- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web.
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
 - Vibración al encontrar un cómic con el escáner y manejo del permiso de cámara.
 - **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle y la búsqueda por portada se puede reintentar.
@@ -33,7 +34,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Estado de las pantallas | `StateFlow` + `collectAsStateWithLifecycle` |
 | Almacenamiento local | DataStore Preferences (bloqueo por intentos de inicio de sesión) |
 | Cuentas y datos | Firebase Authentication, Cloud Firestore (Firebase BoM 34.19.0) |
-| APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas) |
+| APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas y de los resultados de la búsqueda web), [Tavily](https://tavily.com) (búsqueda web de ISBN) |
 
 ## Arquitectura
 
@@ -46,7 +47,7 @@ UI (Compose) → ViewModel → Repository → Retrofit / API
 - Cada pantalla con lógica tiene su propio ViewModel (`EscaneoViewModel`, `BusquedaViewModel`, `PortadaViewModel`, `DetalleViewModel`).
 - `AccesoViewModel` maneja iniciar sesión, crear cuenta y recuperar la contraseña; `PerfilViewModel` da el correo de la cuenta y cierra la sesión; `SesionViewModel` decide si la app abre en Acceso o en Inicio.
 - `AccesoViewModel` es un `AndroidViewModel`: recibe la `Application` para usar `AlmacenIntentos`, que guarda con DataStore los fallos seguidos y la hora del bloqueo.
-- `ComicRepository` recibe las APIs (Metron, MyMemory y Gemini) por constructor y los ViewModels se las pasan.
+- `ComicRepository` recibe las APIs (Metron, MyMemory, Gemini y Tavily) por constructor y los ViewModels se las pasan. `ClienteRetrofit` tiene un Retrofit para cada una; los de Metron, Gemini y Tavily agregan su token o clave con un interceptor de OkHttp.
 - `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
 - Los estados de cada pantalla se manejan con `sealed interface` (cargando, encontrado, varios resultados, error).
 - Los ViewModels exponen su estado con un `MutableStateFlow` privado y un `StateFlow` público; las pantallas lo leen con `collectAsStateWithLifecycle()`.
@@ -58,7 +59,7 @@ com.example.heroscan
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
 ├── repository/   ComicRepository y CuentaRepository
-├── util/         clasificador de códigos de barras, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
+├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -67,22 +68,25 @@ com.example.heroscan
 1. Clonar el repositorio y abrirlo en Android Studio.
 2. Conseguir un token de la API de Metron (cuenta gratuita en [metron.cloud](https://metron.cloud)).
 3. Para buscar por portada, conseguir una clave gratuita de Gemini en [Google AI Studio](https://aistudio.google.com/apikey) (**Get API key**).
-4. En el archivo `local.properties` de la raíz del proyecto (lo crea Android Studio), agregar al final:
+4. Para buscar ISBN-13 en la web, conseguir una clave de la API de Tavily en https://app.tavily.com (el plan gratis da 1.000 créditos al mes y cada búsqueda gasta 1).
+5. En el archivo `local.properties` de la raíz del proyecto (lo crea Android Studio), agregar al final:
    ```
    METRON_TOKEN=tu_token
    GEMINI_API_KEY=tu_clave
+   TAVILY_API_KEY=tu_clave_de_tavily
    ```
    Opcional: `GEMINI_MODEL=nombre_del_modelo` (por defecto `gemini-3.5-flash-lite`).
-   Este archivo no se sube a git, así que el token y la clave nunca quedan en el repositorio.
-5. **File → Sync Project with Gradle Files**.
-6. Ejecutar en un celular o emulador (Android 7.0 / API 24 o superior).
+   Este archivo no se sube a git, así que el token y las claves nunca quedan en el repositorio.
+6. **File → Sync Project with Gradle Files**.
+7. Ejecutar en un celular o emulador (Android 7.0 / API 24 o superior).
 
 > Si las búsquedas muestran **"Falta configurar el token de Metron o no es válido"**, falta `METRON_TOKEN` o está mal escrito en `local.properties`.
 > Si "Buscar por portada" muestra **"Falta configurar la clave de Gemini"**, falta `GEMINI_API_KEY`. El resto de la app funciona sin ella.
+> Si un ISBN-13 muestra **"Falta configurar la clave de Tavily"**, falta `TAVILY_API_KEY`. El resto de la app funciona sin ella. Para buscar un ISBN también hacen falta `METRON_TOKEN` y `GEMINI_API_KEY`: la app revisa las tres antes de buscar en la web, así no se gasta una búsqueda si falta alguna.
 
 ## Configurar Firebase (inicio de sesión)
 
-La app usa Firebase para las cuentas. El archivo `app/google-services.json` no está en el repositorio, así que cada persona que clone el proyecto tiene que crear su propio proyecto de Firebase. Hazlo antes del paso 5 de "Cómo correr el proyecto".
+La app usa Firebase para las cuentas. El archivo `app/google-services.json` no está en el repositorio, así que cada persona que clone el proyecto tiene que crear su propio proyecto de Firebase. Hazlo antes del paso 6 de "Cómo correr el proyecto".
 
 1. Entrar a [console.firebase.google.com](https://console.firebase.google.com) y crear un proyecto nuevo. Alcanza con el plan **Spark**, que es gratis. Google Analytics no hace falta.
 2. En el proyecto, **agregar una app Android** con el nombre de paquete `com.example.heroscan`. El apodo y el SHA-1 son opcionales. Descargar el `google-services.json` y ponerlo en la carpeta `app/`, junto a `app/build.gradle.kts`. Ese archivo está en `.gitignore`: **nunca lo subas al repositorio**, porque tiene los datos de tu proyecto.
@@ -123,7 +127,7 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-84 pruebas JUnit 4 en `app/src/test` (83 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
+88 pruebas JUnit 4 en `app/src/test` (87 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
 ```
@@ -134,7 +138,11 @@ gradlew.bat testDebugUnitTest
 ## Limitaciones conocidas
 
 - El escáner no lee el suplemento de 5 dígitos (EAN-5) de los cómics, porque ML Kit no lo soporta. Por eso al escanear se encuentra la **serie** y se elige el número de una lista. Para un número exacto se pueden escribir los 17 dígitos en la búsqueda.
-- Solo se soportan códigos UPC-A y EAN-13; los ISBN (tomos y novelas gráficas) todavía no.
+- Los UPC-A y EAN-13 se buscan directo en Metron, y los ISBN-13 se buscan en la web. Los ISBN-10 todavía no se soportan, ni las grapas con EAN (ediciones en español) que Metron no tiene.
+- La búsqueda web usa el plan gratis de Tavily: 1.000 créditos al mes, y cada ISBN gasta uno (también al tocar REINTENTAR). Si se acaban, la app muestra "Se acabaron las búsquedas web gratis de este mes".
+- La búsqueda web solo busca en 8 tiendas y catálogos de cómics y libros de Colombia y España, más AbeBooks (internacional): MercadoLibre Colombia, Whakoom, Tebeosfera, Todocoleccion, AbeBooks, Iberlibro, Casa del Libro y Buscalibre Colombia (el mismo orden de la lista del código). Como la app no es pública, la lista se dejó fija con las páginas probadas. Un ISBN que no aparezca en esas páginas no se encuentra y la app muestra "No se encontró el cómic en la web". Para buscar en más páginas (por ejemplo, de otros países), agrega el dominio a la lista `DOMINIOS_BUSQUEDA_WEB` en `repository/ComicRepository.kt` (sin `https://` ni `www.`) y vuelve a compilar.
+- Si un ISBN escaneado da varios resultados, la lista se busca por título y el detalle muestra el tipo de código "Desconocido" (como en la búsqueda por portada). Si el ISBN se escribe en la búsqueda, el detalle muestra "ISBN-13".
+- Un tomo en español que reúne varios números se busca por su serie original en inglés: la app muestra los números de esa serie, no el tomo.
 - Buscar por portada usa la capa gratuita de Gemini: tiene límites de uso y el servicio puede estar saturado a ratos. Si la portada da varios resultados, la lista se busca solo por título. Los cómics que no están en Metron (por ejemplo, tomos recopilatorios) no se encuentran.
 - Las listas muestran la primera página de resultados de Metron.
 - La búsqueda por personaje usa el primer personaje que coincide con el nombre.
@@ -151,14 +159,15 @@ Medidas aplicadas siguiendo la guía de clase "Autenticación y seguridad con Je
 - **Sin permisos de galería:** la foto de la portada se elige con el selector del sistema, que no necesita permisos de almacenamiento.
 - **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
 
-**Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN` y `GEMINI_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
+**Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN`, `GEMINI_API_KEY` y `TAVILY_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
 
 - Metron: un servidor intermediario que guarde el token y haga las consultas por la app.
 - Gemini: Firebase AI Logic con App Check, para llamar al modelo sin poner la clave en la app.
+- Tavily: el mismo servidor intermediario que Metron, que guarde la clave y haga la búsqueda web por la app.
 
 **Sobre `google-services.json`:** identifica el proyecto de Firebase; no es una clave secreta. La protección de los datos está en las reglas de Firestore (ver "Configurar Firebase"). Igual se mantiene fuera de git, porque cada quien usa su propio proyecto.
 
 ## Próximas fases
 
-- Soporte para ISBN y códigos de ediciones en español.
+- Soporte para ISBN-10 y para las grapas con EAN de ediciones en español que Metron no tiene.
 - Funciones de colección personal.

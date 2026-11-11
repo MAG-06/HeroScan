@@ -28,7 +28,7 @@ import java.util.concurrent.Executors
 // y, cuando detecta uno, busca el cómic en el repositorio.
 class EscaneoViewModel : ViewModel() {
 
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
     private val _uiState = MutableStateFlow<EscaneoUiState>(EscaneoUiState.Escaneando)
     val uiState: StateFlow<EscaneoUiState> = _uiState
@@ -111,6 +111,11 @@ class EscaneoViewModel : ViewModel() {
 
     // Busca en el repositorio el cómic que corresponde al código detectado.
     private fun buscarComic(codigo: String, tipo: TipoCodigo) {
+        if (tipo == TipoCodigo.ISBN_13) {
+            buscarEnLaWeb(codigo)
+            return
+        }
+
         _uiState.value = EscaneoUiState.Buscando
 
         viewModelScope.launch {
@@ -118,6 +123,26 @@ class EscaneoViewModel : ViewModel() {
                 when (val resultado = repositorio.buscarPorCodigo(codigo, tipo)) {
                     is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosResultados(codigo)
+                }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                EscaneoUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: Exception) {
+                EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
+            }
+        }
+    }
+
+    // Busca en la web el ISBN-13 detectado (o escrito) y actualiza el estado con lo que encuentre.
+    private fun buscarEnLaWeb(codigo: String) {
+        _uiState.value = EscaneoUiState.BuscandoEnLaWeb
+
+        viewModelScope.launch {
+            _uiState.value = try {
+                val resultadoWeb = repositorio.buscarCodigoEnLaWeb(codigo)
+                when (val resultado = resultadoWeb.resultado) {
+                    is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
+                    is ResultadoBusqueda.Varios -> EscaneoUiState.VariosPorTitulo(resultadoWeb.titulo)
                 }
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
