@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 // ViewModel del detalle: recibe por la ruta el id del cómic y su tipo de código, y le pide el detalle a Metron.
 class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
@@ -49,6 +50,8 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 DetalleUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 DetalleUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
