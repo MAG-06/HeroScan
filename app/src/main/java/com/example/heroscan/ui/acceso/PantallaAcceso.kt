@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.heroscan.ui.components.BotonDialogo
 import com.example.heroscan.ui.components.CapaDialogo
@@ -88,9 +89,9 @@ fun PantallaAcceso(
     var clave by remember { mutableStateOf("") }
     var confirmacion by remember { mutableStateOf("") }
 
-    val uiState = accesoViewModel.uiState
-    val modo = accesoViewModel.modo
-    val estadoRecuperacion = accesoViewModel.estadoRecuperacion
+    val uiState by accesoViewModel.uiState.collectAsStateWithLifecycle()
+    val modo by accesoViewModel.modo.collectAsStateWithLifecycle()
+    val estadoRecuperacion by accesoViewModel.estadoRecuperacion.collectAsStateWithLifecycle()
 
     // Cuando uiState cambia a SesionIniciada se avisa una sola vez a quien abrió la pantalla.
     LaunchedEffect(uiState) {
