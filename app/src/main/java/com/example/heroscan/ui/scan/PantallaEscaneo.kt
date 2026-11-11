@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.heroscan.model.TipoCodigo
@@ -90,6 +92,11 @@ fun PantallaEscaneo(
 
             else -> {}
         }
+    }
+
+    // Si la pantalla deja de verse (app al fondo, otra pantalla o girar), la cámara se cierra y apaga la linterna: el botón también vuelve a apagado.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        escaneoViewModel.apagarLinterna()
     }
 
     ContenidoEscaneo(
