@@ -1,9 +1,11 @@
 package com.example.heroscan.ui.acceso
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.repository.CuentaRepository
 import com.example.heroscan.repository.MENSAJE_CREDENCIALES
+import com.example.heroscan.util.AlmacenIntentos
 import com.example.heroscan.util.LimitadorIntentos
 import com.example.heroscan.util.evaluarClave
 import com.example.heroscan.util.validarClave
@@ -13,6 +15,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -27,19 +30,23 @@ private const val MENSAJE_DESCONOCIDO = "Error desconocido"
 private const val UN_SEGUNDO_MS = 1000L
 
 // Maneja la pantalla de Acceso: iniciar sesión, crear cuenta y recuperar contraseña.
-// Llama a CuentaRepository y guarda el estado para que la pantalla lo dibuje. No recibe Context.
+// Llama a CuentaRepository y guarda el estado para que la pantalla lo dibuje. Recibe la Application solo para AlmacenIntentos.
 // Las contraseñas solo pasan por las funciones como parámetro: nunca se guardan en el estado ni en Log.
-class AccesoViewModel : ViewModel() {
+class AccesoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repositorio = CuentaRepository(FirebaseAuth.getInstance(), FirebaseFirestore.getInstance())
 
-    // Cuenta los inicios de sesión fallidos. Vive mientras viva este ViewModel (al girar el celular se conserva).
+    // Cuenta los inicios de sesión fallidos. Sus valores se guardan con AlmacenIntentos, así que siguen aunque se cierre la app.
     private val limitador = LimitadorIntentos()
+
+    // Guarda en el teléfono los valores del limitador para que el bloqueo siga aunque se cierre la app.
+    private val almacen = AlmacenIntentos(app)
 
     // Corrutina de la cuenta regresiva. Un Job es como un "hilo liviano" que se puede cancelar.
     private var trabajoCuentaRegresiva: Job? = null
 
-    private val _uiState = MutableStateFlow<AccesoUiState>(AccesoUiState.Normal)
+    // Empieza en Cargando hasta leer lo guardado, para que no se pueda intentar antes.
+    private val _uiState = MutableStateFlow<AccesoUiState>(AccesoUiState.Cargando)
     val uiState: StateFlow<AccesoUiState> = _uiState
 
     private val _estadoRecuperacion = MutableStateFlow<RecuperacionUiState>(RecuperacionUiState.Cerrado)
@@ -52,6 +59,26 @@ class AccesoViewModel : ViewModel() {
     // "as?" intenta convertir el valor actual de uiState a Error y da null si no lo es (como un instanceof + cast de Java, sin excepción).
     val errorDeCredenciales: Boolean
         get() = (_uiState.value as? AccesoUiState.Error)?.mensaje == MENSAJE_CREDENCIALES
+
+    // Al crearse, lee los fallos y el bloqueo guardados. Si sigue bloqueado, arranca la cuenta regresiva; si no, deja la pantalla lista.
+    init {
+        viewModelScope.launch {
+            try {
+                val fallos = almacen.fallosSeguidos.first()
+                val hastaMs = almacen.bloqueadoHastaMs.first()
+                limitador.restaurar(fallos, hastaMs)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Si no se pudo leer, se empieza con 0 fallos.
+            }
+            if (limitador.puedeIntentar()) {
+                _uiState.value = AccesoUiState.Normal
+            } else {
+                iniciarCuentaRegresiva()
+            }
+        }
+    }
 
     // Cambia entre Iniciar sesión y Crear cuenta. Quita el error que hubiera, pero no quita un bloqueo.
     fun cambiarModo(nuevoModo: ModoAcceso) {
@@ -74,12 +101,14 @@ class AccesoViewModel : ViewModel() {
             try {
                 val usuario = repositorio.iniciarSesion(correo, clave)
                 limitador.registrarExito()
+                guardarLimitador()
                 _uiState.value = AccesoUiState.SesionIniciada(usuario)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (e.message == MENSAJE_CREDENCIALES) {
                     limitador.registrarFallo()
+                    guardarLimitador()
                 }
                 if (limitador.puedeIntentar()) {
                     _uiState.value = AccesoUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
@@ -163,9 +192,20 @@ class AccesoViewModel : ViewModel() {
         }
     }
 
-    // Indica si hay que ignorar el toque del botón: ya se está esperando a Firebase o hay un bloqueo.
+    // Indica si hay que ignorar el toque del botón: se está leyendo lo guardado, se espera a Firebase o hay un bloqueo.
     private fun estaOcupado(): Boolean {
         return _uiState.value is AccesoUiState.Cargando || _uiState.value is AccesoUiState.Bloqueado
+    }
+
+    // Guarda en el teléfono los fallos y el bloqueo actuales del limitador.
+    private suspend fun guardarLimitador() {
+        try {
+            almacen.guardar(limitador.fallosSeguidos, limitador.bloqueadoHastaMs)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Si no se pudo guardar, el limitador sigue funcionando en memoria.
+        }
     }
 
     // Muestra la cuenta regresiva del bloqueo: cada segundo actualiza los segundos que faltan y al terminar vuelve a Normal.

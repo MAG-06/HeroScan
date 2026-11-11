@@ -11,12 +11,13 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 ## Funcionalidades
 
 - **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna.
-- **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro).
+- **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro). El chip "O AGITA EL TELÉFONO" solo aparece si el teléfono tiene acelerómetro.
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
 - **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos).
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
 - Vibración al encontrar un cómic con el escáner y manejo del permiso de cámara.
-- **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos.
+- **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle y la búsqueda por portada se puede reintentar.
+- **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos: desde el 5.º fallo seguido hay que esperar 30 segundos, y cada fallo más duplica la espera hasta 15 minutos. El bloqueo sigue aunque se cierre la app y se borra al iniciar sesión bien.
 - **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
 
 ## Tecnologías
@@ -29,6 +30,8 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Sensores | Acelerómetro (SensorManager) |
 | Red | Retrofit, Gson, OkHttp |
 | Imágenes | Coil |
+| Estado de las pantallas | `StateFlow` + `collectAsStateWithLifecycle` |
+| Almacenamiento local | DataStore Preferences (bloqueo por intentos de inicio de sesión) |
 | Cuentas y datos | Firebase Authentication, Cloud Firestore (Firebase BoM 34.19.0) |
 | APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas) |
 
@@ -40,11 +43,13 @@ MVVM sencilla:
 UI (Compose) → ViewModel → Repository → Retrofit / API
 ```
 
-- Cada pantalla con lógica tiene su propio ViewModel (`EscaneoViewModel`, `BusquedaViewModel`, `PortadaViewModel`).
+- Cada pantalla con lógica tiene su propio ViewModel (`EscaneoViewModel`, `BusquedaViewModel`, `PortadaViewModel`, `DetalleViewModel`).
 - `AccesoViewModel` maneja iniciar sesión, crear cuenta y recuperar la contraseña; `PerfilViewModel` da el correo de la cuenta y cierra la sesión; `SesionViewModel` decide si la app abre en Acceso o en Inicio.
+- `AccesoViewModel` es un `AndroidViewModel`: recibe la `Application` para usar `AlmacenIntentos`, que guarda con DataStore los fallos seguidos y la hora del bloqueo.
 - `ComicRepository` recibe las APIs (Metron, MyMemory y Gemini) por constructor y los ViewModels se las pasan.
 - `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
 - Los estados de cada pantalla se manejan con `sealed interface` (cargando, encontrado, varios resultados, error).
+- Los ViewModels exponen su estado con un `MutableStateFlow` privado y un `StateFlow` público; las pantallas lo leen con `collectAsStateWithLifecycle()`.
 - Entre pantallas solo viaja por la ruta lo necesario (por ejemplo, el id del cómic); la pantalla de destino busca sus datos con su propio ViewModel.
 
 ```
@@ -53,7 +58,7 @@ com.example.heroscan
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
 ├── repository/   ComicRepository y CuentaRepository
-├── util/         clasificador de códigos de barras, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave y LimitadorIntentos
+├── util/         clasificador de códigos de barras, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -116,6 +121,16 @@ Qué se guarda en Firestore:
 > Si al crear la cuenta aparece **"No se pudo completar la operación. Inténtalo de nuevo."** aunque haya internet, revisa que la base de Firestore esté creada y que las reglas estén publicadas tal cual.
 > Si el correo para recuperar la contraseña no llega, revisa la carpeta de spam: Firebase lo envía desde una dirección genérica (noreply@…firebaseapp.com) y Gmail suele marcarlo como spam.
 
+## Pruebas unitarias
+
+84 pruebas JUnit 4 en `app/src/test` (83 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
+
+Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
+```
+gradlew.bat testDebugUnitTest
+```
+(en macOS/Linux: `./gradlew testDebugUnitTest`).
+
 ## Limitaciones conocidas
 
 - El escáner no lee el suplemento de 5 dígitos (EAN-5) de los cómics, porque ML Kit no lo soporta. Por eso al escanear se encuentra la **serie** y se elige el número de una lista. Para un número exacto se pueden escribir los 17 dígitos en la búsqueda.
@@ -125,12 +140,13 @@ Qué se guarda en Firestore:
 - La búsqueda por personaje usa el primer personaje que coincide con el nombre.
 - Las descripciones de más de 500 caracteres se muestran en inglés (límite de MyMemory).
 - Metron (cuenta gratuita) acepta unas 20 peticiones por minuto y abrir un cómic cuesta varias (el cómic y la imagen de cada personaje). Si se abren muchos cómics seguidos, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
+- El bloqueo por intentos fallidos usa la hora del teléfono: si se adelanta el reloj, termina antes (si se atrasa, la espera nunca pasa de 15 minutos). Borrar los datos de la app o reinstalarla también lo quita.
 
 ## Seguridad
 
 Medidas aplicadas siguiendo la guía de clase "Autenticación y seguridad con Jetpack Compose":
 
-- **Sin copias de seguridad:** `allowBackup="false"` y reglas de extracción (`res/xml/data_extraction_rules.xml`). Los datos de la app, incluida la sesión, no se copian a la nube ni pasan a otro teléfono. Al reinstalar la app hay que volver a iniciar sesión.
+- **Sin copias de seguridad:** `allowBackup="false"` y reglas de extracción (`res/xml/data_extraction_rules.xml`). Los datos de la app, incluidos la sesión y el bloqueo por intentos fallidos, no se copian a la nube ni pasan a otro teléfono. Al reinstalar la app hay que volver a iniciar sesión.
 - **Solo HTTPS:** `res/xml/seguridad_red.xml` bloquea cualquier conexión `http://` sin cifrar.
 - **Sin permisos de galería:** la foto de la portada se elige con el selector del sistema, que no necesita permisos de almacenamiento.
 - **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
