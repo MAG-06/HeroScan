@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.heroscan.model.Comic
@@ -69,8 +70,10 @@ fun PantallaDetalleComic(
     alVolver: () -> Unit = {},
     detalleViewModel: DetalleViewModel = viewModel()
 ) {
+    val uiState by detalleViewModel.uiState.collectAsStateWithLifecycle()
+
     ContenidoDetalle(
-        uiState = detalleViewModel.uiState,
+        uiState = uiState,
         alVolver = alVolver,
         alReintentar = detalleViewModel::cargarComic
     )

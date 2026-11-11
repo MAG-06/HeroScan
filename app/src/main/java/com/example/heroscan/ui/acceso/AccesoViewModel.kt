@@ -1,8 +1,5 @@
 package com.example.heroscan.ui.acceso
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.repository.CuentaRepository
@@ -14,6 +11,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -40,23 +39,23 @@ class AccesoViewModel : ViewModel() {
     // Corrutina de la cuenta regresiva. Un Job es como un "hilo liviano" que se puede cancelar.
     private var trabajoCuentaRegresiva: Job? = null
 
-    var uiState: AccesoUiState by mutableStateOf(AccesoUiState.Normal)
-        private set
+    private val _uiState = MutableStateFlow<AccesoUiState>(AccesoUiState.Normal)
+    val uiState: StateFlow<AccesoUiState> = _uiState
 
-    var estadoRecuperacion: RecuperacionUiState by mutableStateOf(RecuperacionUiState.Cerrado)
-        private set
+    private val _estadoRecuperacion = MutableStateFlow<RecuperacionUiState>(RecuperacionUiState.Cerrado)
+    val estadoRecuperacion: StateFlow<RecuperacionUiState> = _estadoRecuperacion
 
-    var modo: ModoAcceso by mutableStateOf(ModoAcceso.INICIAR_SESION)
-        private set
+    private val _modo = MutableStateFlow<ModoAcceso>(ModoAcceso.INICIAR_SESION)
+    val modo: StateFlow<ModoAcceso> = _modo
 
     // true si el error actual es "Correo o contraseña incorrectos.": la pantalla pinta en rojo correo y contraseña.
-    // "as?" intenta convertir uiState a Error y da null si no lo es (como un instanceof + cast de Java, sin excepción).
+    // "as?" intenta convertir el valor actual de uiState a Error y da null si no lo es (como un instanceof + cast de Java, sin excepción).
     val errorDeCredenciales: Boolean
-        get() = (uiState as? AccesoUiState.Error)?.mensaje == MENSAJE_CREDENCIALES
+        get() = (_uiState.value as? AccesoUiState.Error)?.mensaje == MENSAJE_CREDENCIALES
 
     // Cambia entre Iniciar sesión y Crear cuenta. Quita el error que hubiera, pero no quita un bloqueo.
     fun cambiarModo(nuevoModo: ModoAcceso) {
-        modo = nuevoModo
+        _modo.value = nuevoModo
         limpiarError()
     }
 
@@ -66,16 +65,16 @@ class AccesoViewModel : ViewModel() {
 
         // Clave vacía: se avisa sin llamar a Firebase y sin contar el fallo.
         if (clave.isEmpty()) {
-            uiState = AccesoUiState.Error(MENSAJE_CLAVE_VACIA)
+            _uiState.value = AccesoUiState.Error(MENSAJE_CLAVE_VACIA)
             return
         }
 
-        uiState = AccesoUiState.Cargando
+        _uiState.value = AccesoUiState.Cargando
         viewModelScope.launch {
             try {
                 val usuario = repositorio.iniciarSesion(correo, clave)
                 limitador.registrarExito()
-                uiState = AccesoUiState.SesionIniciada(usuario)
+                _uiState.value = AccesoUiState.SesionIniciada(usuario)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -83,7 +82,7 @@ class AccesoViewModel : ViewModel() {
                     limitador.registrarFallo()
                 }
                 if (limitador.puedeIntentar()) {
-                    uiState = AccesoUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
+                    _uiState.value = AccesoUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
                 } else {
                     iniciarCuentaRegresiva()
                 }
@@ -97,68 +96,68 @@ class AccesoViewModel : ViewModel() {
         if (estaOcupado()) return
 
         if (clave != confirmacion) {
-            uiState = AccesoUiState.Error(MENSAJE_CLAVES_DISTINTAS)
+            _uiState.value = AccesoUiState.Error(MENSAJE_CLAVES_DISTINTAS)
             return
         }
 
         val errorClave = validarClave(clave)
         if (errorClave != null) {
-            uiState = AccesoUiState.Error(errorClave)
+            _uiState.value = AccesoUiState.Error(errorClave)
             return
         }
 
         if (!evaluarClave(clave, correo).esAceptable) {
-            uiState = AccesoUiState.Error(MENSAJE_CLAVE_DEBIL)
+            _uiState.value = AccesoUiState.Error(MENSAJE_CLAVE_DEBIL)
             return
         }
 
-        uiState = AccesoUiState.Cargando
+        _uiState.value = AccesoUiState.Cargando
         viewModelScope.launch {
             try {
                 val usuario = repositorio.registrar(nombreUsuario, correo, clave)
-                uiState = AccesoUiState.SesionIniciada(usuario)
+                _uiState.value = AccesoUiState.SesionIniciada(usuario)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                uiState = AccesoUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
+                _uiState.value = AccesoUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
             }
         }
     }
 
     // Cierra la tarjeta de error y deja el formulario listo. Si está bloqueado o cargando, no hace nada.
     fun limpiarError() {
-        if (uiState is AccesoUiState.Error) {
-            uiState = AccesoUiState.Normal
+        if (_uiState.value is AccesoUiState.Error) {
+            _uiState.value = AccesoUiState.Normal
         }
     }
 
     // Abre el diálogo "Recuperar contraseña" (también sirve para volver a intentarlo después de un error).
     fun abrirRecuperacion() {
-        estadoRecuperacion = RecuperacionUiState.Abierto
+        _estadoRecuperacion.value = RecuperacionUiState.Abierto
     }
 
     // Cierra el diálogo "Recuperar contraseña".
     fun cerrarRecuperacion() {
-        estadoRecuperacion = RecuperacionUiState.Cerrado
+        _estadoRecuperacion.value = RecuperacionUiState.Cerrado
     }
 
     // Pide el correo de recuperación. Si sale bien, el diálogo muestra siempre el mismo texto, exista o no la cuenta.
     fun enviarRecuperacion(correo: String) {
-        if (estadoRecuperacion is RecuperacionUiState.Enviando) return
+        if (_estadoRecuperacion.value is RecuperacionUiState.Enviando) return
 
-        estadoRecuperacion = RecuperacionUiState.Enviando
+        _estadoRecuperacion.value = RecuperacionUiState.Enviando
         viewModelScope.launch {
             try {
                 repositorio.enviarRecuperacion(correo)
                 // Solo se cambia si el diálogo sigue esperando (el usuario pudo cerrarlo mientras tanto).
-                if (estadoRecuperacion is RecuperacionUiState.Enviando) {
-                    estadoRecuperacion = RecuperacionUiState.Enviado
+                if (_estadoRecuperacion.value is RecuperacionUiState.Enviando) {
+                    _estadoRecuperacion.value = RecuperacionUiState.Enviado
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                if (estadoRecuperacion is RecuperacionUiState.Enviando) {
-                    estadoRecuperacion = RecuperacionUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
+                if (_estadoRecuperacion.value is RecuperacionUiState.Enviando) {
+                    _estadoRecuperacion.value = RecuperacionUiState.Error(e.message ?: MENSAJE_DESCONOCIDO)
                 }
             }
         }
@@ -166,7 +165,7 @@ class AccesoViewModel : ViewModel() {
 
     // Indica si hay que ignorar el toque del botón: ya se está esperando a Firebase o hay un bloqueo.
     private fun estaOcupado(): Boolean {
-        return uiState is AccesoUiState.Cargando || uiState is AccesoUiState.Bloqueado
+        return _uiState.value is AccesoUiState.Cargando || _uiState.value is AccesoUiState.Bloqueado
     }
 
     // Muestra la cuenta regresiva del bloqueo: cada segundo actualiza los segundos que faltan y al terminar vuelve a Normal.
@@ -176,10 +175,10 @@ class AccesoViewModel : ViewModel() {
         trabajoCuentaRegresiva?.cancel()
         trabajoCuentaRegresiva = viewModelScope.launch {
             while (!limitador.puedeIntentar()) {
-                uiState = AccesoUiState.Bloqueado(limitador.segundosDeEspera())
+                _uiState.value = AccesoUiState.Bloqueado(limitador.segundosDeEspera())
                 delay(UN_SEGUNDO_MS)
             }
-            uiState = AccesoUiState.Normal
+            _uiState.value = AccesoUiState.Normal
         }
     }
 }

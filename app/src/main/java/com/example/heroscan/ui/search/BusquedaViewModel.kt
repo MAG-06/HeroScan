@@ -1,8 +1,5 @@
 package com.example.heroscan.ui.search
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +14,8 @@ import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.clasificarCodigoEscrito
 import com.example.heroscan.util.limpiarCodigo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -30,15 +29,15 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // Filtros que se muestran debajo de la barra de búsqueda
     val filtros = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
 
-    var uiState: BusquedaUiState by mutableStateOf(BusquedaUiState.Inicial)
-        private set
+    private val _uiState = MutableStateFlow<BusquedaUiState>(BusquedaUiState.Inicial)
+    val uiState: StateFlow<BusquedaUiState> = _uiState
 
     // El texto y el filtro empiezan con lo guardado en el SavedStateHandle (si no hay nada, con su valor inicial): así sobreviven a que Android cierre la app en segundo plano.
-    var textoBusqueda by mutableStateOf(estadoGuardado.get<String>(CLAVE_TEXTO) ?: "")
-        private set
+    private val _textoBusqueda = MutableStateFlow<String>(estadoGuardado.get<String>(CLAVE_TEXTO) ?: "")
+    val textoBusqueda: StateFlow<String> = _textoBusqueda
 
-    var filtroSeleccionado by mutableStateOf(estadoGuardado.get<String>(CLAVE_FILTRO) ?: filtros.first())
-        private set
+    private val _filtroSeleccionado = MutableStateFlow<String>(estadoGuardado.get<String>(CLAVE_FILTRO) ?: filtros.first())
+    val filtroSeleccionado: StateFlow<String> = _filtroSeleccionado
 
     // Tipo del último código buscado. Se guarda para usarlo cuando el usuario elige un cómic de la lista,
     // así no importa si después cambió el texto de la barra de búsqueda.
@@ -69,24 +68,24 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
 
     // Actualiza el texto escrito en la barra de búsqueda y lo copia al SavedStateHandle.
     fun cambiarTextoBusqueda(texto: String) {
-        textoBusqueda = texto
+        _textoBusqueda.value = texto
         estadoGuardado[CLAVE_TEXTO] = texto
     }
 
     // Cambia el filtro seleccionado y lo copia al SavedStateHandle.
     fun seleccionarFiltro(filtro: String) {
-        filtroSeleccionado = filtro
+        _filtroSeleccionado.value = filtro
         estadoGuardado[CLAVE_FILTRO] = filtro
     }
 
     // Lanza una búsqueda nueva según el filtro seleccionado.
     fun buscar() {
-        if (textoBusqueda.isBlank()) return
+        if (_textoBusqueda.value.isBlank()) return
 
         // Es una búsqueda nueva: se olvida la lista anterior
         ultimosResultados = emptyList()
 
-        when (filtroSeleccionado) {
+        when (_filtroSeleccionado.value) {
             "TÍTULO" -> buscarPorTitulo()
             "PERSONAJE" -> buscarPorPersonaje()
             "CÓDIGO" -> buscarPorCodigo()
@@ -98,11 +97,11 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     private fun buscarPorTitulo() {
         // No viene de un código de barras, así que el detalle no debe mostrar un tipo de código viejo
         tipoCodigoBuscado = TipoCodigo.DESCONOCIDO
-        uiState = BusquedaUiState.Cargando
+        _uiState.value = BusquedaUiState.Cargando
 
         viewModelScope.launch {
-            uiState = try {
-                when (val resultado = repositorio.buscarPorTitulo(textoBusqueda)) {
+            _uiState.value = try {
+                when (val resultado = repositorio.buscarPorTitulo(_textoBusqueda.value)) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
@@ -118,20 +117,20 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // Clasifica el texto como código de barras y, si es reconocible, busca el cómic por ese código.
     private fun buscarPorCodigo() {
 
-        val tipoCodigo = clasificarCodigoEscrito(textoBusqueda)
+        val tipoCodigo = clasificarCodigoEscrito(_textoBusqueda.value)
 
         // Si el código no tiene una longitud válida, se avisa al usuario en vez de no hacer nada
         if (tipoCodigo == TipoCodigo.DESCONOCIDO) {
-            uiState = BusquedaUiState.Error("Código no válido: debe tener 12, 13 o 17 dígitos")
+            _uiState.value = BusquedaUiState.Error("Código no válido: debe tener 12, 13 o 17 dígitos")
             return
         }
 
         tipoCodigoBuscado = tipoCodigo
-        uiState = BusquedaUiState.Cargando
+        _uiState.value = BusquedaUiState.Cargando
 
         viewModelScope.launch {
-            uiState = try {
-                when (val resultado = repositorio.buscarPorCodigo(textoBusqueda, tipoCodigo)) {
+            _uiState.value = try {
+                when (val resultado = repositorio.buscarPorCodigo(_textoBusqueda.value, tipoCodigo)) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
@@ -148,11 +147,11 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     private fun buscarPorPersonaje() {
         // No viene de un código de barras, así que el detalle no debe mostrar un tipo de código viejo
         tipoCodigoBuscado = TipoCodigo.DESCONOCIDO
-        uiState = BusquedaUiState.Cargando
+        _uiState.value = BusquedaUiState.Cargando
 
         viewModelScope.launch {
-            uiState = try {
-                when (val resultado = repositorio.buscarPorPersonaje(textoBusqueda)) {
+            _uiState.value = try {
+                when (val resultado = repositorio.buscarPorPersonaje(_textoBusqueda.value)) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
@@ -168,7 +167,7 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // Filtro "TODO": si el texto son solo dígitos se busca como código; si tiene letras, como título.
     private fun buscarGeneral() {
         // Se quitan espacios y guiones antes de revisar, para que "76194-134..." se reconozca como código
-        val textoLimpio = limpiarCodigo(textoBusqueda)
+        val textoLimpio = limpiarCodigo(_textoBusqueda.value)
 
         // Si son solo dígitos, es un código de barras
         if (textoLimpio.all { it.isDigit() }) {
@@ -183,18 +182,18 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // Abre el detalle del cómic elegido de la lista: guarda la lista para mostrarla al volver y navega con su id.
     fun seleccionarComic(idComic: Int) {
         // Guardar la lista actual para volver a mostrarla al regresar del detalle
-        val estadoActual = uiState
+        val estadoActual = _uiState.value
         if (estadoActual is BusquedaUiState.VariosResultados) {
             ultimosResultados = estadoActual.resultados
         }
 
-        uiState = BusquedaUiState.Encontrado(idComic, tipoCodigoBuscado)
+        _uiState.value = BusquedaUiState.Encontrado(idComic, tipoCodigoBuscado)
     }
 
     // Se llama después de navegar al detalle. Si el cómic se eligió de una lista, se vuelve a mostrar
     // esa lista (para verla al regresar); si no, la pantalla vuelve a su estado inicial.
     fun reiniciarEstado() {
-        uiState = if (ultimosResultados.isNotEmpty()) {
+        _uiState.value = if (ultimosResultados.isNotEmpty()) {
             BusquedaUiState.VariosResultados(ultimosResultados)
         } else {
             BusquedaUiState.Inicial
