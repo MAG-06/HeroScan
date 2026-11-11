@@ -38,3 +38,10 @@ fun Context.sensorFlow(tipo: Int, retardo: Int = SensorManager.SENSOR_DELAY_UI):
 
     awaitClose { gestorSensores.unregisterListener(oyente) }
 }
+
+// Dice si el teléfono tiene un sensor de ese tipo (por ejemplo el acelerómetro).
+// getDefaultSensor devuelve null cuando el teléfono no tiene ese sensor.
+fun Context.tieneSensor(tipo: Int): Boolean {
+    val gestorSensores = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    return gestorSensores.getDefaultSensor(tipo) != null
+}
