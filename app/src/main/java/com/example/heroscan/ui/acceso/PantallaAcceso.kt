@@ -192,7 +192,7 @@ private fun ContenidoAcceso(
                 .imePadding()
                 .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 16.dp)) {
+            Box(modifier = Modifier.padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 16.dp)) {
                 LogoHeroScan()
             }
 
@@ -664,7 +664,7 @@ private fun BotonAcceso(
                 strokeWidth = 2.dp,
                 modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
         }
         Text(
             text = texto,

@@ -122,7 +122,7 @@ private fun ContenidoEscaneo(
             when (uiState) {
                 is EscaneoUiState.Buscando -> {
                     PanelInferior {
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         CircularProgressIndicator(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp)
@@ -133,7 +133,7 @@ private fun ContenidoEscaneo(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
@@ -250,7 +250,7 @@ private fun ContenidoInferiorEscaneo(
 ) {
     PanelInferior {
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (codigoDetectado == null) {
             Text(
@@ -267,7 +267,7 @@ private fun ContenidoInferiorEscaneo(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
-                modifier = Modifier.padding(horizontal = 12.dp)
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
         } else {
             /*SeccionCodigoDetectado(
@@ -276,7 +276,7 @@ private fun ContenidoInferiorEscaneo(
             )*/
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
