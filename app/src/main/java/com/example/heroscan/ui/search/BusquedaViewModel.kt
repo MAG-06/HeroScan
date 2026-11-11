@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 // Maneja la pantalla de búsqueda: guarda el texto y el filtro, decide qué tipo de búsqueda hacer
 // y pide los cómics al repositorio.
@@ -108,6 +109,8 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
@@ -143,6 +146,8 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
@@ -162,6 +167,8 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
@@ -183,6 +190,8 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }

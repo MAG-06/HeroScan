@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.coroutines.cancellation.CancellationException
 
 // Controla la cámara (linterna), analiza cada frame con ML Kit para detectar códigos de barras
 // y, cuando detecta uno, busca el cómic en el repositorio.
@@ -134,6 +135,8 @@ class EscaneoViewModel : ViewModel() {
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 EscaneoUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
@@ -154,6 +157,8 @@ class EscaneoViewModel : ViewModel() {
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 EscaneoUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 // Maneja la pantalla de búsqueda por portada: manda la imagen (ya en Base64) al repositorio,
 // que la reconoce con Gemini y la busca en Metron, y guarda el estado para que la pantalla lo muestre.
@@ -39,6 +40,8 @@ class PortadaViewModel : ViewModel() {
             } catch (e: IOException) {
                 // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
                 PortadaUiState.Error("No hay conexión o la IA tardó demasiado. Intenta de nuevo.")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 PortadaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }

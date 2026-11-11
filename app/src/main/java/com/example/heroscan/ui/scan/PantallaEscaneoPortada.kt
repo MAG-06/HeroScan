@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -223,7 +224,7 @@ private fun AreaImagenPortada(imagenSeleccionada: Uri?, modifier: Modifier = Mod
     }
 }
 
-// Panel inferior con el botón ENVIAR (activo solo si hay imagen) y el botón para abrir la galería.
+// Panel inferior con el aviso de la IA, el botón ENVIAR (activo solo si hay imagen) y el botón para abrir la galería.
 // Mientras se busca, ENVIAR queda deshabilitado y muestra un indicador de carga en vez del texto.
 @Composable
 private fun PanelInferiorPortada(
@@ -238,6 +239,15 @@ private fun PanelInferiorPortada(
             color = Color.White,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "La IA reconoce la portada y puede equivocarse. No subas fotos con datos personales.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
