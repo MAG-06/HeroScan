@@ -62,8 +62,10 @@ class EscaneoViewModel : ViewModel() {
     val ejecutorAnalisis: ExecutorService = Executors.newSingleThreadExecutor()
 
     // Guarda la cámara cuando CameraX termina de iniciarla, para poder controlar la linterna.
+    // Una cámara recién iniciada tiene la linterna apagada, así que el botón también vuelve a apagado.
     fun guardarCamara(camara: Camera) {
         this.camara = camara
+        _linternaEncendida.value = false
     }
 
     // Enciende o apaga la linterna de la cámara.
@@ -72,6 +74,11 @@ class EscaneoViewModel : ViewModel() {
         val nuevoEstado = !_linternaEncendida.value
         camaraActual.cameraControl.enableTorch(nuevoEstado)
         _linternaEncendida.value = nuevoEstado
+    }
+
+    // Deja el botón de la linterna en apagado. Se llama cuando la pantalla deja de verse, porque al cerrarse la cámara la linterna se apaga sola.
+    fun apagarLinterna() {
+        _linternaEncendida.value = false
     }
 
     // Analiza un frame de la cámara con ML Kit. Si encuentra un código nuevo mientras se está escaneando,
