@@ -313,7 +313,7 @@ private fun SeccionInformacion(
                 imageVector = icono,
                 contentDescription = null,
                 tint = colorIcono,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(

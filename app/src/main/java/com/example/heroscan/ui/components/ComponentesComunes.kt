@@ -96,7 +96,7 @@ fun LogoHeroScan() {
                     imageVector = Icons.Filled.AutoAwesome,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -161,7 +161,7 @@ fun BarraSuperior(
                 imageVector = iconoDerecho,
                 contentDescription = null,
                 tint = colorIconoDerecho,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
     }

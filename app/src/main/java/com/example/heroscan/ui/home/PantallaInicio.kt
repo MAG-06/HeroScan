@@ -65,6 +65,7 @@ import com.example.heroscan.ui.components.rememberPedirPermisoCamara
 import com.example.heroscan.ui.theme.CapaOscura
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.sensorFlow
+import com.example.heroscan.util.tieneSensor
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
@@ -81,6 +82,8 @@ fun PantallaInicio(
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
     val contexto = LocalContext.current
+    // El chip "O AGITA EL TELÉFONO" solo se muestra si el teléfono tiene acelerómetro (sin él, agitar no hace nada).
+    val hayAcelerometro = remember { contexto.tieneSensor(Sensor.TYPE_ACCELEROMETER) }
 
     // Pide el permiso de cámara: si lo conceden va a escanear, si no muestra un aviso
     val pedirPermisoCamara = rememberPedirPermisoCamara(
@@ -99,7 +102,8 @@ fun PantallaInicio(
         alEscanear = pedirPermisoCamara,
         alBuscarPorPortada = alBuscarPorPortada,
         alBuscarPorTexto = alBuscarPorTexto,
-        alIrAPerfil = alIrAPerfil
+        alIrAPerfil = alIrAPerfil,
+        mostrarPistaAgitar = hayAcelerometro
     )
 }
 
@@ -110,7 +114,8 @@ private fun ContenidoInicio(
     alEscanear: () -> Unit = {},
     alBuscarPorPortada: () -> Unit = {},
     alBuscarPorTexto: () -> Unit = {},
-    alIrAPerfil: () -> Unit = {}
+    alIrAPerfil: () -> Unit = {},
+    mostrarPistaAgitar: Boolean = true
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
 
@@ -127,7 +132,7 @@ private fun ContenidoInicio(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    TarjetaEscaneo(alEscanear = alEscanear)
+                    TarjetaEscaneo(alEscanear = alEscanear, mostrarPistaAgitar = mostrarPistaAgitar)
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
@@ -178,9 +183,9 @@ private fun ContenidoInicio(
     }
 }
 
-// Tarjeta principal con imagen de fondo y el botón "ESCANEAR AHORA".
+// Tarjeta principal con imagen de fondo y el botón "ESCANEAR AHORA". El chip "O AGITA EL TELÉFONO" solo aparece si mostrarPistaAgitar es true.
 @Composable
-private fun TarjetaEscaneo(alEscanear: () -> Unit) {
+private fun TarjetaEscaneo(alEscanear: () -> Unit, mostrarPistaAgitar: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -241,8 +246,11 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit) {
                     fontSize = 13.sp
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-                PistaAgitar()
+                // El chip solo aparece si el teléfono tiene acelerómetro; sin él, el botón queda a 16 dp del subtítulo.
+                if (mostrarPistaAgitar) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PistaAgitar()
+                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 BotonAccionPrincipal(
@@ -283,7 +291,7 @@ private fun TarjetaOpcionBusqueda(
                     .background(colorIcono.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(18.dp))
+                Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -328,7 +336,7 @@ private fun DetectorSacudida(alSacudir: () -> Unit) {
 }
 
 // Pista pequeña tipo chip ("O AGITA EL TELÉFONO") dentro de la tarjeta de escaneo.
-// Solo es visual: avisa que agitar el teléfono también abre el escáner (lo detecta DetectorSacudida).
+// Solo es visual: avisa que agitar el teléfono también abre el escáner (lo detecta DetectorSacudida). Solo se muestra si el teléfono tiene acelerómetro.
 @Composable
 private fun PistaAgitar() {
     Row(
@@ -362,5 +370,14 @@ private fun PistaAgitar() {
 private fun PreviewInicio() {
     TemaHeroScan {
         ContenidoInicio()
+    }
+}
+
+// Frame "Inicio · Sin acelerómetro": igual que Inicio, pero sin el chip "O AGITA EL TELÉFONO".
+@Preview(name = "Inicio · Sin acelerómetro", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewInicioSinAcelerometro() {
+    TemaHeroScan {
+        ContenidoInicio(mostrarPistaAgitar = false)
     }
 }
