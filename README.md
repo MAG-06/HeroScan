@@ -127,7 +127,7 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-88 pruebas JUnit 4 en `app/src/test` (87 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
+89 pruebas JUnit 4 en `app/src/test` (88 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
 ```
@@ -152,12 +152,14 @@ gradlew.bat testDebugUnitTest
 
 ## Seguridad
 
-Medidas aplicadas siguiendo la guía de clase "Autenticación y seguridad con Jetpack Compose":
+Medidas aplicadas siguiendo las guías de clase "Autenticación y seguridad con Jetpack Compose" y "Modelos de lenguaje (LLM) en Android con Jetpack Compose":
 
 - **Sin copias de seguridad:** `allowBackup="false"` y reglas de extracción (`res/xml/data_extraction_rules.xml`). Los datos de la app, incluidos la sesión y el bloqueo por intentos fallidos, no se copian a la nube ni pasan a otro teléfono. Al reinstalar la app hay que volver a iniciar sesión.
 - **Solo HTTPS:** `res/xml/seguridad_red.xml` bloquea cualquier conexión `http://` sin cifrar.
 - **Sin permisos de galería:** la foto de la portada se elige con el selector del sistema, que no necesita permisos de almacenamiento.
 - **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
+- **Resultados de la web separados de las instrucciones:** los resultados de la búsqueda web se le mandan a Gemini entre `<resultados>` y `</resultados>` y sin los `<` y `>` de las páginas, para que no se mezclen con las instrucciones (protección básica contra la inyección de prompt). Igual, lo que diga la IA siempre lo confirma Metron.
+- **Aviso de la IA en Portada:** debajo de "SUBE LA IMAGEN" se avisa que la IA puede equivocarse y que no se suban fotos con datos personales, porque en la capa gratuita de Gemini Google puede usar lo que se envía.
 
 **Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN`, `GEMINI_API_KEY` y `TAVILY_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
 

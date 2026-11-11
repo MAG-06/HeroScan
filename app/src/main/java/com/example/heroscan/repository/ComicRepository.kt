@@ -26,6 +26,7 @@ import com.example.heroscan.util.limpiarCodigo
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import retrofit2.HttpException
+import kotlin.coroutines.cancellation.CancellationException
 
 // Resultado de una búsqueda: un solo cómic (su id y su tipo de código, para abrir el detalle) o varios para que el usuario elija.
 sealed interface ResultadoBusqueda {
@@ -165,6 +166,8 @@ class ComicRepository(
             } else {
                 textoTraducido
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             textoOriginal
         }
@@ -179,6 +182,8 @@ class ComicRepository(
                     nombre = detallePersonaje.name,
                     imagenUrl = detallePersonaje.image ?: ""
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Personaje(nombre = personaje.name, imagenUrl = "")
             }
@@ -242,6 +247,8 @@ class ComicRepository(
 
         val resultado = try {
             buscarPorTitulo(titulo, numero.ifBlank { null })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Si había número, se prueba solo con el título; si no, el error se deja pasar
             if (numero.isNotBlank()) {
@@ -296,6 +303,8 @@ class ComicRepository(
 
         val resultado = try {
             buscarPorTitulo(titulo, numero.ifBlank { null })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Si había número, se prueba solo con el título; si no, el error se deja pasar
             if (numero.isNotBlank()) {
@@ -324,12 +333,12 @@ class ComicRepository(
         )
     }
 
-    // Manda a Gemini los resultados de la búsqueda web y devuelve el título original, número y editorial que reconoció.
+    // Manda a Gemini los resultados de la búsqueda web, entre <resultados> y </resultados> para separarlos de las instrucciones, y devuelve el título original, número y editorial que reconoció.
     private suspend fun identificarDesdeTexto(textoResultados: String): DatosPortadaGemini {
         return pedirDatosAGemini(
             partes = listOf(
                 ParteGemini(text = INSTRUCCIONES_CODIGO_WEB),
-                ParteGemini(text = textoResultados)
+                ParteGemini(text = "<resultados>\n$textoResultados\n</resultados>")
             ),
             mensajeIlegible = "La IA no pudo identificar el cómic"
         )

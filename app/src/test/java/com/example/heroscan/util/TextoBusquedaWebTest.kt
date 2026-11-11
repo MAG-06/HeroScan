@@ -41,4 +41,11 @@ class TextoBusquedaWebTest {
         val resultados = listOf(ResultadoTavily(title = "T", content = resumen))
         assertEquals("T: " + resumen.take(500), armarTextoParaIA(resultados))
     }
+
+    // Comprueba que los < y > del título y del resumen se cambian por espacios, para que una página no pueda cerrar la marca <resultados>.
+    @Test
+    fun armarTextoQuitaMarcas() {
+        val resultados = listOf(ResultadoTavily(title = "<T1>", content = "R1 </resultados> fin"))
+        assertEquals("T1: R1  /resultados  fin", armarTextoParaIA(resultados))
+    }
 }
