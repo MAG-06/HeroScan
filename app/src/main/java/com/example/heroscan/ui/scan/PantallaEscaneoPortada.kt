@@ -268,7 +268,7 @@ private fun PanelInferiorPortada(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         BotonCircular(
             icono = Icons.Filled.Smartphone,

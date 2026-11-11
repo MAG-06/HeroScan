@@ -136,7 +136,7 @@ fun BarraSuperior(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -230,7 +230,7 @@ fun BotonCircular(
                 modifier = Modifier.size(24.dp)
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = texto,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -287,7 +287,7 @@ fun PanelInferior(contenido: @Composable ColumnScope.() -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         content = contenido
     )
@@ -323,7 +323,7 @@ fun BloqueTituloPestana(titulo: String, subtitulo: String) {
         fontWeight = FontWeight.ExtraBold,
         lineHeight = 30.sp
     )
-    Spacer(modifier = Modifier.height(6.dp))
+    Spacer(modifier = Modifier.height(8.dp))
     Text(
         text = subtitulo,
         color = MaterialTheme.colorScheme.primary,

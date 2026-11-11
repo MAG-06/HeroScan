@@ -111,7 +111,7 @@ private fun ContenidoDetalle(
                         modifier = Modifier
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp)
+                            .padding(horizontal = 16.dp)
                     ) {
                         PortadaComic(portadaUrl = comic.portadaUrl)
 
@@ -124,7 +124,7 @@ private fun ContenidoDetalle(
                             fechaPublicacion = comic.fechaPublicacion
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         SeccionInformacion(
                             icono = Icons.AutoMirrored.Filled.MenuBook,
@@ -139,7 +139,7 @@ private fun ContenidoDetalle(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         if (comic.personajes.isNotEmpty()) {
                             SeccionInformacion(
@@ -157,12 +157,12 @@ private fun ContenidoDetalle(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         if (comic.creadores.isNotEmpty()) {
                             SeccionCreditos(creadores = comic.creadores)
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         SeccionInformacion(
@@ -176,7 +176,7 @@ private fun ContenidoDetalle(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -245,7 +245,7 @@ private fun BloqueTituloComic(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.primary)
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
                 text = "#$numero",
@@ -255,7 +255,7 @@ private fun BloqueTituloComic(
             )
         }
     }
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(8.dp))
     Text(
         text = "$editorial · $fechaPublicacion",
         color = MaterialTheme.colorScheme.primary,
@@ -324,7 +324,7 @@ private fun SeccionInformacion(
                 letterSpacing = 0.5.sp
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         contenido()
     }
 }
@@ -338,7 +338,7 @@ private fun TarjetaInformacion(contenido: @Composable () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         contenido()
     }
@@ -382,7 +382,7 @@ private fun AvatarPersonaje(personaje: Personaje) {
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = personaje.nombre,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
