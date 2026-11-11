@@ -137,7 +137,7 @@ private fun ContenidoEscaneo(
                         Text(
                             text = "Buscando cómic...",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
+                            style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -149,14 +149,14 @@ private fun ContenidoEscaneo(
                         Text(
                             text = if (uiState.sinConexion) "Problema de conexión" else "No se encontró el cómic",
                             color = Color.White,
-                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = uiState.mensaje,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp
+                            style = MaterialTheme.typography.titleSmall
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
@@ -164,7 +164,7 @@ private fun ContenidoEscaneo(
                             Text(
                                 text = "REINTENTAR",
                                 color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -264,7 +264,7 @@ private fun ContenidoInferiorEscaneo(
             Text(
                 text = "APUNTA AL CÓDIGO DE BARRAS",
                 color = Color.White,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
 
@@ -273,7 +273,7 @@ private fun ContenidoInferiorEscaneo(
             Text(
                 text = "Coloca el código dentro del área de escaneo para buscar automáticamente en la base de datos de cómics.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.titleSmall,
                 lineHeight = 18.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )

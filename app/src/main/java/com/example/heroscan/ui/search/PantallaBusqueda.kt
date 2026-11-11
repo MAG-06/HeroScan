@@ -203,7 +203,7 @@ private fun CampoBusqueda(
         placeholder = {
             Text(
                 text = "Busca por título, personaje o código...",
-                fontSize = 14.sp
+                style = MaterialTheme.typography.titleMedium
             )
         },
         leadingIcon = {
@@ -257,7 +257,7 @@ private fun ChipFiltro(
             Text(
                 text = texto,
                 color = if (seleccionado) Color.Black else Color.White,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp, letterSpacing = 0.1.sp),
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
@@ -322,7 +322,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
         Text(
             text = "DESCUBRE TU PRÓXIMO\nCÓMIC",
             color = Color.White,
-            fontSize = 20.sp,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
             lineHeight = 26.sp
@@ -333,7 +333,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
         Text(
             text = "Busca por título, personaje, UPC o código de barras EAN para encontrar tu cómic.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Center,
             lineHeight = 18.sp
         )
@@ -351,7 +351,7 @@ private fun ContenidoVariosResultados(
         Text(
             text = "Se encontraron ${resultados.size} resultados",
             color = Color.White,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -408,7 +408,7 @@ private fun TarjetaResultadoComic(
             Text(
                 text = "${comic.titulo} #${comic.numero}",
                 color = Color.White,
-                fontSize = 15.sp,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -418,7 +418,7 @@ private fun TarjetaResultadoComic(
                 Text(
                     text = comic.fechaPortada,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }

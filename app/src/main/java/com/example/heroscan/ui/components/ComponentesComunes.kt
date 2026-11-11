@@ -101,8 +101,8 @@ fun LogoHeroScan() {
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "HERO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(text = "SCAN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = "HERO", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+            Text(text = "SCAN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
@@ -146,7 +146,7 @@ fun BarraSuperior(
         Text(
             text = titulo,
             color = Color.White,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
         )
@@ -235,7 +235,7 @@ fun BotonCircular(
         Text(
             text = texto,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
         )
     }
@@ -320,7 +320,7 @@ fun BloqueTituloPestana(titulo: String, subtitulo: String) {
     Text(
         text = titulo,
         color = Color.White,
-        fontSize = 26.sp,
+        style = MaterialTheme.typography.displayMedium,
         fontWeight = FontWeight.ExtraBold,
         lineHeight = 30.sp
     )
@@ -328,7 +328,7 @@ fun BloqueTituloPestana(titulo: String, subtitulo: String) {
     Text(
         text = subtitulo,
         color = MaterialTheme.colorScheme.primary,
-        fontSize = 15.sp
+        style = MaterialTheme.typography.titleLarge
     )
 }
 
@@ -494,7 +494,7 @@ fun BotonDialogo(
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
-        Text(text = texto, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = texto, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -514,7 +514,7 @@ fun ContenidoCargando(texto: String, modifier: Modifier = Modifier) {
         Text(
             text = texto,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp
+            style = MaterialTheme.typography.titleMedium
         )
     }
 }
@@ -537,7 +537,7 @@ fun ContenidoError(
         Text(
             text = if (sinConexion) "Problema de conexión" else "No se encontró el cómic",
             color = Color.White,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -545,7 +545,7 @@ fun ContenidoError(
         Text(
             text = mensaje,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Center
         )
         if (alReintentar != null) {
@@ -555,7 +555,7 @@ fun ContenidoError(
                 Text(
                     text = "REINTENTAR",
                     color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
