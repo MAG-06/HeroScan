@@ -7,6 +7,8 @@ import com.example.heroscan.model.TipoCodigo
 sealed interface BusquedaUiState {
     object Inicial : BusquedaUiState
     object Cargando : BusquedaUiState
+    // Se está buscando un ISBN-13 en la web
+    object CargandoEnLaWeb : BusquedaUiState
     data class Encontrado(val idComic: Int, val tipoCodigo: TipoCodigo) : BusquedaUiState
     data class VariosResultados(val resultados: List<ComicResumen>) : BusquedaUiState
     data class Error(val mensaje: String, val sinConexion: Boolean = false) : BusquedaUiState

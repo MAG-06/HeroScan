@@ -25,7 +25,7 @@ object RutaEscaneo
 @Serializable
 object RutaEscaneoPortada
 
-// Búsqueda con dos argumentos opcionales: el código (desde el escáner con varios resultados) y el título (desde la búsqueda por portada con varios resultados). Sin ninguno, se abre vacía. Navigation codifica el título solo.
+// Búsqueda con dos argumentos opcionales: el código (desde el escáner con varios resultados) y el título (desde la búsqueda por portada o del escáner con un ISBN-13, con varios resultados). Sin ninguno, se abre vacía. Navigation codifica el título solo.
 @Serializable
 data class RutaBusqueda(val codigo: String? = null, val titulo: String? = null)
 

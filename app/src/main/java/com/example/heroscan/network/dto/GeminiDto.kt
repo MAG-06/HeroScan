@@ -6,7 +6,7 @@ package com.example.heroscan.network.dto
 
 // === PETICIÓN ===
 
-// Petición completa: el contenido a analizar (texto + imagen) y la configuración de la respuesta.
+// Petición completa: el contenido a analizar (texto y, si hay, una imagen) y la configuración de la respuesta.
 data class PeticionGemini(
     val contents: List<ContenidoGemini>,
     val generationConfig: ConfiguracionGemini
@@ -54,7 +54,7 @@ data class CandidatoGemini(
     val content: ContenidoGemini?
 )
 
-// JSON que Gemini devuelve como texto dentro de parts[0].text y que se lee una segunda vez con Gson.
+// Datos que devuelve Gemini en su JSON (titulo, numero, editorial). Lo usan buscar por portada y buscar un ISBN-13 en la web.
 // Los campos son String? porque Gson deja en null lo que no llega.
 data class DatosPortadaGemini(
     val titulo: String?,

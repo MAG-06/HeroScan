@@ -7,6 +7,7 @@ import com.example.heroscan.model.Personaje
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.network.api.GeminiApi
 import com.example.heroscan.network.api.MetronApi
+import com.example.heroscan.network.api.TavilyApi
 import com.example.heroscan.network.api.TraduccionApi
 import com.example.heroscan.network.dto.ConfiguracionGemini
 import com.example.heroscan.network.dto.ContenidoGemini
@@ -16,9 +17,11 @@ import com.example.heroscan.network.dto.EsquemaGemini
 import com.example.heroscan.network.dto.ParteGemini
 import com.example.heroscan.network.dto.PeticionGemini
 import com.example.heroscan.network.dto.PersonajeMetron
+import com.example.heroscan.network.dto.PeticionTavily
 import com.example.heroscan.network.dto.RespuestaListaMetron
 import com.example.heroscan.network.mapper.aComic
 import com.example.heroscan.network.mapper.aComicResumen
+import com.example.heroscan.util.armarTextoParaIA
 import com.example.heroscan.util.limpiarCodigo
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
@@ -30,7 +33,7 @@ sealed interface ResultadoBusqueda {
     data class Varios(val resultados: List<ComicResumen>) : ResultadoBusqueda
 }
 
-// Resultado de buscar por portada: el título que reconoció la IA y lo que encontró Metron con él.
+// Resultado de buscar por portada o por ISBN en la web: el título que reconoció la IA y lo que encontró Metron con él.
 // Se guarda el título porque, si hay varios resultados, la pantalla de búsqueda se abre con ese título.
 data class ResultadoPortada(val titulo: String, val resultado: ResultadoBusqueda)
 
@@ -43,24 +46,50 @@ private const val INSTRUCCIONES_PORTADA =
         "editorial: la editorial de la edición de la portada. " +
         "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los tres campos vacíos."
 
+// Instrucciones que se le mandan a Gemini junto con los resultados de buscar el ISBN en la web.
+private const val INSTRUCCIONES_CODIGO_WEB =
+    "Estos son resultados de buscar en la web el código de barras (ISBN) de un cómic. Pueden estar en español u otro idioma. " +
+        "Algunas páginas pueden mezclar el cómic con otro libro que tiene el mismo código: usa solo la información del cómic. " +
+        "titulo: nombre ORIGINAL en inglés de la serie o novela gráfica, tal como se publicó en EE. UU., sin número ni año. " +
+        "numero: solo el número de la edición original si el libro es un único número; vacío si es un tomo que reúne varios números o si no se sabe. " +
+        "editorial: la editorial de la edición original en inglés; vacío si no se sabe. " +
+        "Si los resultados no hablan de un cómic o no lo reconoces, devuelve los tres campos vacíos."
+
 // Mensaje cuando un error no trae texto propio. Lo usan los ViewModels de escaneo, búsqueda, portada y detalle.
 const val MENSAJE_ERROR_DESCONOCIDO = "Error desconocido"
 
 // Mensaje cuando no hay internet o Metron tarda demasiado. Lo usan escaneo, búsqueda y detalle.
 const val MENSAJE_SIN_CONEXION_COMICS = "No hay conexión o el servidor tardó demasiado. Intenta de nuevo."
 
+// Texto cuando falta la clave de Gemini (lo usan buscar por portada y buscar un ISBN en la web).
+private const val MENSAJE_FALTA_CLAVE_GEMINI = "Falta configurar la clave de Gemini"
+
+// Páginas donde se busca un ISBN-13: tiendas y catálogos de cómics y libros de Colombia y España, más AbeBooks (internacional). Buscando en toda la web, Tavily trae listas de libros que no tienen que ver.
+// Para buscar en más páginas (por ejemplo, de otros países), agrega su dominio a esta lista, sin "https://" ni "www.".
+private val DOMINIOS_BUSQUEDA_WEB = listOf(
+    "mercadolibre.com.co",
+    "whakoom.com",
+    "tebeosfera.com",
+    "todocoleccion.net",
+    "abebooks.com",
+    "iberlibro.com",
+    "casadellibro.com",
+    "buscalibre.com.co"
+)
+
 // Obtiene la información de los cómics desde Metron y traduce su descripción con MyMemory.
-// También reconoce portadas con Gemini y busca en Metron el cómic que encontró. Recibe las APIs por constructor.
+// También reconoce portadas con Gemini y busca en la web (Tavily) los ISBN-13; en los dos casos busca en Metron el cómic que encontró. Recibe las APIs por constructor.
 class ComicRepository(
     private val metronApi: MetronApi,
     private val traduccionApi: TraduccionApi,
-    private val geminiApi: GeminiApi
+    private val geminiApi: GeminiApi,
+    private val tavilyApi: TavilyApi
 ) {
 
     // Se usa para leer por segunda vez el JSON que Gemini devuelve como texto.
     private val gson = Gson()
 
-    // Busca un cómic por su código de barras. Por ahora solo se soportan UPC-A y EAN-13.
+    // Busca un cómic por su código de barras en Metron (UPC-A y EAN-13). Los ISBN-13 se buscan con buscarCodigoEnLaWeb.
     suspend fun buscarPorCodigo(codigo: String, tipoCodigo: TipoCodigo): ResultadoBusqueda {
         val codigoLimpio = limpiarCodigo(codigo)
 
@@ -199,7 +228,7 @@ class ComicRepository(
     // y luego se buscan en Metron. Si con el número no hay resultados, se reintenta solo con el título.
     suspend fun buscarPorPortada(imagenBase64: String): ResultadoPortada {
         if (BuildConfig.GEMINI_API_KEY.isBlank()) {
-            throw Exception("Falta configurar la clave de Gemini")
+            throw Exception(MENSAJE_FALTA_CLAVE_GEMINI)
         }
 
         val datos = identificarPortada(imagenBase64)
@@ -225,17 +254,93 @@ class ComicRepository(
         return ResultadoPortada(titulo, resultado)
     }
 
+    // Busca un ISBN-13 en la web: Tavily trae las páginas, Gemini reconoce el título original y Metron lo confirma.
+    // Revisa el token de Metron y las claves de Tavily y Gemini antes de cualquier petición, para no gastar una búsqueda web que después no se pueda usar.
+    suspend fun buscarCodigoEnLaWeb(codigo: String): ResultadoPortada {
+        if (BuildConfig.METRON_TOKEN.isBlank()) {
+            throw Exception("Falta configurar el token de Metron o no es válido")
+        }
+        if (BuildConfig.TAVILY_API_KEY.isBlank()) {
+            throw Exception("Falta configurar la clave de Tavily")
+        }
+        if (BuildConfig.GEMINI_API_KEY.isBlank()) {
+            throw Exception(MENSAJE_FALTA_CLAVE_GEMINI)
+        }
+
+        val respuestaWeb = try {
+            tavilyApi.buscarEnLaWeb(
+                PeticionTavily(
+                    query = limpiarCodigo(codigo),
+                    search_depth = "basic",
+                    max_results = 5,
+                    include_domains = DOMINIOS_BUSQUEDA_WEB
+                )
+            )
+        } catch (e: HttpException) {
+            throw Exception(mensajeErrorTavily(e.code()))
+        }
+
+        val textoResultados = armarTextoParaIA(respuestaWeb.results ?: emptyList())
+        if (textoResultados.isBlank()) {
+            throw Exception("No se encontró el cómic en la web")
+        }
+
+        val datos = identificarDesdeTexto(textoResultados)
+
+        val titulo = datos.titulo?.trim() ?: ""
+        val numero = datos.numero?.trim() ?: ""
+
+        if (titulo.isEmpty()) {
+            throw Exception("No se encontró el cómic en la web")
+        }
+
+        val resultado = try {
+            buscarPorTitulo(titulo, numero.ifBlank { null })
+        } catch (e: Exception) {
+            // Si había número, se prueba solo con el título; si no, el error se deja pasar
+            if (numero.isNotBlank()) {
+                buscarPorTitulo(titulo)
+            } else {
+                throw e
+            }
+        }
+
+        val resultadoConTipo = when (resultado) {
+            is ResultadoBusqueda.Unico -> ResultadoBusqueda.Unico(resultado.idComic, TipoCodigo.ISBN_13)
+            is ResultadoBusqueda.Varios -> resultado
+        }
+
+        return ResultadoPortada(titulo, resultadoConTipo)
+    }
+
     // Manda la portada a Gemini y devuelve el título, número y editorial que reconoció.
-    // Gemini devuelve el JSON pedido como texto dentro de la respuesta, por eso se lee una segunda vez con Gson.
     private suspend fun identificarPortada(imagenBase64: String): DatosPortadaGemini {
+        return pedirDatosAGemini(
+            partes = listOf(
+                ParteGemini(text = INSTRUCCIONES_PORTADA),
+                ParteGemini(inlineData = DatosEnLineaGemini(mimeType = "image/jpeg", data = imagenBase64))
+            ),
+            mensajeIlegible = "La IA no pudo leer la portada"
+        )
+    }
+
+    // Manda a Gemini los resultados de la búsqueda web y devuelve el título original, número y editorial que reconoció.
+    private suspend fun identificarDesdeTexto(textoResultados: String): DatosPortadaGemini {
+        return pedirDatosAGemini(
+            partes = listOf(
+                ParteGemini(text = INSTRUCCIONES_CODIGO_WEB),
+                ParteGemini(text = textoResultados)
+            ),
+            mensajeIlegible = "La IA no pudo identificar el cómic"
+        )
+    }
+
+    // Manda a Gemini las partes indicadas pidiendo un JSON con titulo, numero y editorial, y lo lee con Gson.
+    // Si la respuesta no se puede leer, lanza mensajeIlegible (cada búsqueda tiene el suyo).
+    private suspend fun pedirDatosAGemini(partes: List<ParteGemini>, mensajeIlegible: String): DatosPortadaGemini {
         val peticion = PeticionGemini(
             contents = listOf(
-                ContenidoGemini(
-                    parts = listOf(
-                        ParteGemini(text = INSTRUCCIONES_PORTADA),
-                        ParteGemini(inlineData = DatosEnLineaGemini(mimeType = "image/jpeg", data = imagenBase64))
-                    )
-                )
+                ContenidoGemini(parts = partes)
             ),
             generationConfig = ConfiguracionGemini(
                 responseMimeType = "application/json",
@@ -259,7 +364,7 @@ class ComicRepository(
 
         // Cada paso puede venir vacío, por eso se usa ?. en toda la cadena
         val texto = respuesta.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-            ?: throw Exception("La IA no pudo leer la portada")
+            ?: throw Exception(mensajeIlegible)
 
         // Segunda lectura: el texto es un JSON con titulo, numero y editorial
         val datos = try {
@@ -268,7 +373,7 @@ class ComicRepository(
             null
         }
 
-        return datos ?: throw Exception("La IA no pudo leer la portada")
+        return datos ?: throw Exception(mensajeIlegible)
     }
 
     // Traduce el código de error HTTP de Metron a un mensaje en español (401/403 token, 404 no encontrado, 429 demasiadas peticiones, 500 o más servidor caído).
@@ -291,6 +396,17 @@ class ComicRepository(
             429 -> "Límite de uso de la IA alcanzado, intenta más tarde"
             503 -> "El servicio de la IA está saturado, intenta más tarde"
             else -> "Error al consultar la IA (código $codigo)"
+        }
+    }
+
+    // Convierte el código de error HTTP de Tavily en un mensaje en español para el usuario.
+    private fun mensajeErrorTavily(codigo: Int): String {
+        return when (codigo) {
+            401 -> "Falta configurar la clave de Tavily o no es válida"
+            429 -> "Demasiadas búsquedas web seguidas. Espera un momento e intenta de nuevo."
+            432, 433 -> "Se acabaron las búsquedas web gratis de este mes"
+            in 500..599 -> "El buscador web no está respondiendo. Intenta más tarde."
+            else -> "Error al buscar en la web (código $codigo)"
         }
     }
 }
