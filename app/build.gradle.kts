@@ -86,4 +86,5 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.datastore.preferences) // DataStore Preferences: guarda los intentos de inicio de sesión aunque se cierre la app
 }
