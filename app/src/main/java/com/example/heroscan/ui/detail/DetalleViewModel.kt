@@ -1,8 +1,5 @@
 package com.example.heroscan.ui.detail
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +9,8 @@ import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -31,8 +30,8 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
     // Estado que dibuja la pantalla: cargando, listo o error
-    var uiState by mutableStateOf<DetalleUiState>(DetalleUiState.Cargando)
-        private set
+    private val _uiState = MutableStateFlow<DetalleUiState>(DetalleUiState.Cargando)
+    val uiState: StateFlow<DetalleUiState> = _uiState
 
     // "init" se ejecuta una sola vez, cuando se crea el ViewModel: pide el cómic al abrir la pantalla.
     init {
@@ -41,10 +40,10 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
 
     // Pide el detalle del cómic. Se llama al abrir la pantalla y otra vez con REINTENTAR.
     fun cargarComic() {
-        uiState = DetalleUiState.Cargando
+        _uiState.value = DetalleUiState.Cargando
 
         viewModelScope.launch {
-            uiState = try {
+            _uiState.value = try {
                 val comic = repositorio.obtenerDetalleComic(idComic, tipoCodigo)
                 DetalleUiState.Listo(comic)
             } catch (e: IOException) {

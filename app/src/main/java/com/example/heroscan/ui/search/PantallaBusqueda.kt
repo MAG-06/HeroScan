@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.heroscan.model.ComicResumen
@@ -69,23 +71,30 @@ fun PantallaBusqueda(
     alEncontrarComic: (Int, TipoCodigo) -> Unit = { _, _ -> },
     busquedaViewModel: BusquedaViewModel = viewModel()
 ) {
-    val uiState = busquedaViewModel.uiState
+    val uiState by busquedaViewModel.uiState.collectAsStateWithLifecycle()
+    val textoBusqueda by busquedaViewModel.textoBusqueda.collectAsStateWithLifecycle()
+    val filtroSeleccionado by busquedaViewModel.filtroSeleccionado.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Cuando se encuentra el cómic: vibra, navega al detalle y reinicia el estado de la búsqueda
     LaunchedEffect(uiState) {
-        if (uiState is BusquedaUiState.Encontrado) {
-            vibrarDispositivo(context)
-            alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
-            busquedaViewModel.reiniciarEstado()
+        // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
+        when (val estado = uiState) {
+            is BusquedaUiState.Encontrado -> {
+                vibrarDispositivo(context)
+                alEncontrarComic(estado.idComic, estado.tipoCodigo)
+                busquedaViewModel.reiniciarEstado()
+            }
+
+            else -> {}
         }
     }
 
     ContenidoBusqueda(
         uiState = uiState,
-        textoBusqueda = busquedaViewModel.textoBusqueda,
+        textoBusqueda = textoBusqueda,
         filtros = busquedaViewModel.filtros,
-        filtroSeleccionado = busquedaViewModel.filtroSeleccionado,
+        filtroSeleccionado = filtroSeleccionado,
         alVolver = alVolver,
         alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
         alBuscar = busquedaViewModel::buscar,

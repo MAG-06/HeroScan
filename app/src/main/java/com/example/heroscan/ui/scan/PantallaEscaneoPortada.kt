@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.heroscan.model.TipoCodigo
@@ -66,7 +67,7 @@ fun PantallaEscaneoPortada(
     alVariosResultados: (String) -> Unit = {},
     portadaViewModel: PortadaViewModel = viewModel()
 ) {
-    val uiState = portadaViewModel.uiState
+    val uiState by portadaViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // rememberSaveable: la imagen elegida sigue ahí al girar el celular y al volver del detalle o de la lista (solo se guarda su Uri, no la imagen).
@@ -84,20 +85,21 @@ fun PantallaEscaneoPortada(
 
     // Cuando el ViewModel termina de buscar: navega con el resultado, o muestra el error con REINTENTAR
     LaunchedEffect(uiState) {
-        when (uiState) {
+        // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
+        when (val estado = uiState) {
             is PortadaUiState.Encontrado -> {
-                alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
+                alEncontrarComic(estado.idComic, estado.tipoCodigo)
                 portadaViewModel.prepararNuevaBusqueda()
             }
 
             is PortadaUiState.VariosResultados -> {
-                alVariosResultados(uiState.titulo)
+                alVariosResultados(estado.titulo)
                 portadaViewModel.prepararNuevaBusqueda()
             }
 
             is PortadaUiState.Error -> {
                 val resultado = estadoSnackbar.showSnackbar(
-                    message = uiState.mensaje,
+                    message = estado.mensaje,
                     actionLabel = "REINTENTAR",
                     duration = SnackbarDuration.Long
                 )

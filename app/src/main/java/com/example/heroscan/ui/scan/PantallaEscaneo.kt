@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.AreaEscaneo
@@ -57,21 +59,25 @@ fun PantallaEscaneo(
     alVariosResultados: (String) -> Unit = {},
     escaneoViewModel: EscaneoViewModel = viewModel()
 ) {
-    val uiState = escaneoViewModel.uiState
+    val uiState by escaneoViewModel.uiState.collectAsStateWithLifecycle()
+    val codigoDetectado by escaneoViewModel.codigoDetectado.collectAsStateWithLifecycle()
+    val tipoCodigoDetectado by escaneoViewModel.tipoCodigoDetectado.collectAsStateWithLifecycle()
+    val linternaEncendida by escaneoViewModel.linternaEncendida.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Cuando el ViewModel termina de buscar: vibra, navega y deja la cámara lista para otro escaneo
     LaunchedEffect(uiState) {
-        when (uiState) {
+        // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
+        when (val estado = uiState) {
             is EscaneoUiState.Encontrado -> {
                 vibrarDispositivo(context)
-                alEncontrarComic(uiState.idComic, uiState.tipoCodigo)
+                alEncontrarComic(estado.idComic, estado.tipoCodigo)
                 escaneoViewModel.prepararNuevoEscaneo()
             }
 
             is EscaneoUiState.VariosResultados -> {
                 vibrarDispositivo(context)
-                alVariosResultados(uiState.codigo)
+                alVariosResultados(estado.codigo)
                 escaneoViewModel.prepararNuevoEscaneo()
             }
 
@@ -81,9 +87,9 @@ fun PantallaEscaneo(
 
     ContenidoEscaneo(
         uiState = uiState,
-        codigoDetectado = escaneoViewModel.codigoDetectado,
-        tipoDetectado = escaneoViewModel.tipoCodigoDetectado?.etiqueta,
-        linternaEncendida = escaneoViewModel.linternaEncendida,
+        codigoDetectado = codigoDetectado,
+        tipoDetectado = tipoCodigoDetectado?.etiqueta,
+        linternaEncendida = linternaEncendida,
         areaCamara = { modificador -> AreaCamara(viewModel = escaneoViewModel, modifier = modificador) },
         alVolver = alVolver,
         alPulsarLinterna = escaneoViewModel::alternarLinterna,

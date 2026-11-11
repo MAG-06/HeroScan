@@ -1,14 +1,13 @@
 package com.example.heroscan.ui.scan
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.network.ClienteRetrofit
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.ResultadoBusqueda
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -19,8 +18,8 @@ class PortadaViewModel : ViewModel() {
 
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
-    var uiState: PortadaUiState by mutableStateOf(PortadaUiState.Inicial)
-        private set
+    private val _uiState = MutableStateFlow<PortadaUiState>(PortadaUiState.Inicial)
+    val uiState: StateFlow<PortadaUiState> = _uiState
 
     // Última imagen enviada. Se guarda para poder reenviarla con el botón REINTENTAR.
     private var ultimaImagenBase64: String? = null
@@ -28,10 +27,10 @@ class PortadaViewModel : ViewModel() {
     // Envía la portada al repositorio y actualiza el estado según lo que encuentre.
     fun enviarPortada(imagenBase64: String) {
         ultimaImagenBase64 = imagenBase64
-        uiState = PortadaUiState.Buscando
+        _uiState.value = PortadaUiState.Buscando
 
         viewModelScope.launch {
-            uiState = try {
+            _uiState.value = try {
                 val resultadoPortada = repositorio.buscarPorPortada(imagenBase64)
                 when (val resultado = resultadoPortada.resultado) {
                     is ResultadoBusqueda.Unico -> PortadaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
@@ -52,12 +51,12 @@ class PortadaViewModel : ViewModel() {
         if (imagen != null) {
             enviarPortada(imagen)
         } else {
-            uiState = PortadaUiState.Inicial
+            _uiState.value = PortadaUiState.Inicial
         }
     }
 
     // Se llama después de navegar con un resultado o al cerrar el error: deja la pantalla lista para otro envío.
     fun prepararNuevaBusqueda() {
-        uiState = PortadaUiState.Inicial
+        _uiState.value = PortadaUiState.Inicial
     }
 }

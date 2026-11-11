@@ -3,9 +3,6 @@ package com.example.heroscan.ui.scan
 import androidx.camera.core.Camera
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.TipoCodigo
@@ -20,6 +17,8 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.concurrent.ExecutorService
@@ -31,17 +30,17 @@ class EscaneoViewModel : ViewModel() {
 
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
 
-    var uiState: EscaneoUiState by mutableStateOf(EscaneoUiState.Escaneando)
-        private set
+    private val _uiState = MutableStateFlow<EscaneoUiState>(EscaneoUiState.Escaneando)
+    val uiState: StateFlow<EscaneoUiState> = _uiState
 
-    var codigoDetectado by mutableStateOf<String?>(null)
-        private set
+    private val _codigoDetectado = MutableStateFlow<String?>(null)
+    val codigoDetectado: StateFlow<String?> = _codigoDetectado
 
-    var tipoCodigoDetectado by mutableStateOf<TipoCodigo?>(null)
-        private set
+    private val _tipoCodigoDetectado = MutableStateFlow<TipoCodigo?>(null)
+    val tipoCodigoDetectado: StateFlow<TipoCodigo?> = _tipoCodigoDetectado
 
-    var linternaEncendida by mutableStateOf(false)
-        private set
+    private val _linternaEncendida = MutableStateFlow<Boolean>(false)
+    val linternaEncendida: StateFlow<Boolean> = _linternaEncendida
 
     // Último código que ya se buscó con éxito. Se ignora para que, al volver del detalle con la cámara
     // todavía apuntando al mismo cómic, no se vuelva a abrir el detalle solo.
@@ -70,9 +69,9 @@ class EscaneoViewModel : ViewModel() {
     // Enciende o apaga la linterna de la cámara.
     fun alternarLinterna() {
         val camaraActual = camara ?: return
-        val nuevoEstado = !linternaEncendida
+        val nuevoEstado = !_linternaEncendida.value
         camaraActual.cameraControl.enableTorch(nuevoEstado)
-        linternaEncendida = nuevoEstado
+        _linternaEncendida.value = nuevoEstado
     }
 
     // Analiza un frame de la cámara con ML Kit. Si encuentra un código nuevo mientras se está escaneando,
@@ -94,11 +93,11 @@ class EscaneoViewModel : ViewModel() {
                     // y si no es el mismo que ya se encontró antes
                     if (valor != null && formato != null &&
                         valor != codigoYaProcesado &&
-                        uiState is EscaneoUiState.Escaneando
+                        _uiState.value is EscaneoUiState.Escaneando
                     ) {
                         val tipo = clasificarCodigoEscaneado(valor, formato)
-                        codigoDetectado = valor
-                        tipoCodigoDetectado = tipo
+                        _codigoDetectado.value = valor
+                        _tipoCodigoDetectado.value = tipo
                         buscarComic(valor, tipo)
                     }
                 }
@@ -112,10 +111,10 @@ class EscaneoViewModel : ViewModel() {
 
     // Busca en el repositorio el cómic que corresponde al código detectado.
     private fun buscarComic(codigo: String, tipo: TipoCodigo) {
-        uiState = EscaneoUiState.Buscando
+        _uiState.value = EscaneoUiState.Buscando
 
         viewModelScope.launch {
-            uiState = try {
+            _uiState.value = try {
                 when (val resultado = repositorio.buscarPorCodigo(codigo, tipo)) {
                     is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosResultados(codigo)
@@ -132,19 +131,19 @@ class EscaneoViewModel : ViewModel() {
     // Se llama después de navegar con un resultado (detalle o lista): recuerda el código para no
     // volver a buscarlo en cuanto el usuario regrese, y deja la cámara lista para escanear otro.
     fun prepararNuevoEscaneo() {
-        codigoYaProcesado = codigoDetectado
-        codigoDetectado = null
-        tipoCodigoDetectado = null
-        uiState = EscaneoUiState.Escaneando
+        codigoYaProcesado = _codigoDetectado.value
+        _codigoDetectado.value = null
+        _tipoCodigoDetectado.value = null
+        _uiState.value = EscaneoUiState.Escaneando
     }
 
     // Se llama desde el botón REINTENTAR después de un error: vuelve a escanear y permite leer
     // otra vez el mismo código (por ejemplo, si falló por no tener internet).
     fun reintentar() {
         codigoYaProcesado = null
-        codigoDetectado = null
-        tipoCodigoDetectado = null
-        uiState = EscaneoUiState.Escaneando
+        _codigoDetectado.value = null
+        _tipoCodigoDetectado.value = null
+        _uiState.value = EscaneoUiState.Escaneando
     }
 
     // Se ejecuta cuando el ViewModel se destruye: libera el hilo de análisis y el lector de ML Kit.
