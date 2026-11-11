@@ -27,7 +27,7 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     private val tipoCodigo = ruta.tipoCodigo
 
     // Repositorio que consulta Metron y traduce la descripción
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
     // Estado que dibuja la pantalla: cargando, listo o error
     private val _uiState = MutableStateFlow<DetalleUiState>(DetalleUiState.Cargando)

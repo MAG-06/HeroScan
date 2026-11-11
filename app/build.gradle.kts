@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) // genera el código de las rutas @Serializable (rutas tipadas)
 }
 
-// Lee local.properties para obtener el token de Metron y la clave y el modelo de Gemini sin escribirlos en el código.
+// Lee local.properties para obtener el token de Metron, la clave y el modelo de Gemini y la clave de Tavily sin escribirlos en el código.
 val propiedadesLocales = Properties().apply {
     val archivo = rootProject.file("local.properties")
     if (archivo.exists()) archivo.inputStream().use { load(it) }
@@ -33,6 +33,8 @@ android {
         buildConfigField("String", "GEMINI_API_KEY", "\"${propiedadesLocales.getProperty("GEMINI_API_KEY", "")}\"")
         // Crea BuildConfig.GEMINI_MODEL con el modelo de Gemini a usar; si no está en local.properties usa "gemini-3.5-flash-lite".
         buildConfigField("String", "GEMINI_MODEL", "\"${propiedadesLocales.getProperty("GEMINI_MODEL", "gemini-3.5-flash-lite")}\"")
+        // Crea BuildConfig.TAVILY_API_KEY con la clave de Tavily de local.properties (vacía si no está).
+        buildConfigField("String", "TAVILY_API_KEY", "\"${propiedadesLocales.getProperty("TAVILY_API_KEY", "")}\"")
     }
 
     buildTypes {

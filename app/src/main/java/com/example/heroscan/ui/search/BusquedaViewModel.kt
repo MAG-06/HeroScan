@@ -24,7 +24,7 @@ import java.io.IOException
 // Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta, y aquí también se guardan el texto y el filtro.
 class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewModel() {
 
-    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi)
+    private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
     // Filtros que se muestran debajo de la barra de búsqueda
     val filtros = listOf("TODO", "TÍTULO", "PERSONAJE", "CÓDIGO")
@@ -50,7 +50,7 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // "init" se ejecuta una sola vez, cuando se crea el ViewModel.
     // Si ya hay un texto guardado, Android cerró la app en segundo plano: se deja lo guardado y no se busca, para no gastar peticiones a Metron.
     // Si no, y la pantalla se abrió desde el escáner, la ruta trae un código y se busca automáticamente.
-    // Si se abrió desde la búsqueda por portada, trae un título: se pone el filtro TÍTULO y se busca.
+    // Si se abrió desde la búsqueda por portada o del escáner con un ISBN-13, trae un título: se pone el filtro TÍTULO y se busca.
     // El código tiene prioridad: si llegan los dos, se busca por código.
     init {
         val ruta = estadoGuardado.toRoute<RutaBusqueda>()
@@ -114,7 +114,7 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
         }
     }
 
-    // Clasifica el texto como código de barras y, si es reconocible, busca el cómic por ese código.
+    // Clasifica el texto como código de barras y, si es reconocible, busca el cómic por ese código. Los ISBN-13 se buscan en la web.
     private fun buscarPorCodigo() {
 
         val tipoCodigo = clasificarCodigoEscrito(_textoBusqueda.value)
@@ -126,11 +126,36 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
         }
 
         tipoCodigoBuscado = tipoCodigo
+
+        if (tipoCodigo == TipoCodigo.ISBN_13) {
+            buscarEnLaWeb()
+            return
+        }
+
         _uiState.value = BusquedaUiState.Cargando
 
         viewModelScope.launch {
             _uiState.value = try {
                 when (val resultado = repositorio.buscarPorCodigo(_textoBusqueda.value, tipoCodigo)) {
+                    is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
+                    is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
+                }
+            } catch (e: IOException) {
+                // IOException: no hay internet o la respuesta tardó más que el tiempo máximo
+                BusquedaUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
+            } catch (e: Exception) {
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
+            }
+        }
+    }
+
+    // Busca en la web el ISBN-13 detectado (o escrito) y actualiza el estado con lo que encuentre.
+    private fun buscarEnLaWeb() {
+        _uiState.value = BusquedaUiState.CargandoEnLaWeb
+
+        viewModelScope.launch {
+            _uiState.value = try {
+                when (val resultado = repositorio.buscarCodigoEnLaWeb(_textoBusqueda.value).resultado) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
