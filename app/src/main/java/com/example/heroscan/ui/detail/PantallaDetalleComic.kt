@@ -138,7 +138,7 @@ private fun ContenidoDetalle(
                             Text(
                                 text = comic.descripcion,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.titleSmall,
                                 lineHeight = 19.sp
                             )
                         }
@@ -238,7 +238,7 @@ private fun BloqueTituloComic(
         Text(
             text = titulo,
             color = Color.White,
-            fontSize = 22.sp,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -254,7 +254,7 @@ private fun BloqueTituloComic(
             Text(
                 text = "#$numero",
                 color = Color.Black,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.ExtraBold
             )
         }
@@ -263,7 +263,7 @@ private fun BloqueTituloComic(
     Text(
         text = "$editorial · $fechaPublicacion",
         color = MaterialTheme.colorScheme.primary,
-        fontSize = 13.sp
+        style = MaterialTheme.typography.titleSmall
     )
 }
 
@@ -285,7 +285,7 @@ private fun SeccionCreditos(creadores: List<String>) {
                 Text(
                     text = nombre,
                     color = Color.White,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -299,7 +299,7 @@ private fun SeccionCreditos(creadores: List<String>) {
                     Text(
                         text = if (expandido) "Ver menos" else "Ver todos (${creadores.size})",
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp, letterSpacing = 0.1.sp),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -328,7 +328,7 @@ private fun SeccionInformacion(
             Text(
                 text = titulo,
                 color = colorIcono,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp
             )
@@ -357,8 +357,8 @@ private fun TarjetaInformacion(contenido: @Composable () -> Unit) {
 @Composable
 private fun FilaEtiquetaValor(etiqueta: String, valor: String, colorValor: Color) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = etiqueta, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-        Text(text = valor, color = colorValor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(text = etiqueta, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
+        Text(text = valor, color = colorValor, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -386,7 +386,7 @@ private fun AvatarPersonaje(personaje: Personaje) {
                 Text(
                     text = personaje.nombre.take(1),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 20.sp,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -395,7 +395,7 @@ private fun AvatarPersonaje(personaje: Personaje) {
         Text(
             text = personaje.nombre,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center

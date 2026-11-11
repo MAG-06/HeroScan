@@ -212,7 +212,7 @@ private fun AreaImagenPortada(imagenSeleccionada: Uri?, modifier: Modifier = Mod
                 Text(
                     text = "SIN IMAGEN SELECCIONADA",
                     color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -236,7 +236,7 @@ private fun PanelInferiorPortada(
         Text(
             text = "SUBE LA IMAGEN",
             color = Color.White,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold
         )
 
