@@ -56,10 +56,13 @@ import com.example.heroscan.ui.components.Visor
 import com.example.heroscan.ui.theme.CapaOscura
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.convertirImagenABase64
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // Pantalla para escanear la portada del cómic a partir de una imagen elegida de la galería.
-// Al pulsar ENVIAR convierte la imagen a Base64, se la pasa al ViewModel y navega cuando hay resultado.
+// Al pulsar ENVIAR convierte la imagen a Base64 fuera del hilo principal, se la pasa al ViewModel y navega cuando hay resultado.
 // Crea (o recibe) el ViewModel, guarda la imagen elegida, abre la galería y muestra el aviso (Snackbar), y le pasa todo a ContenidoPortada, que solo dibuja.
 @Composable
 fun PantallaEscaneoPortada(
@@ -83,6 +86,8 @@ fun PantallaEscaneoPortada(
 
     val estadoSnackbar = remember { SnackbarHostState() }
     val alcanceCorrutina = rememberCoroutineScope()
+    // true mientras la imagen se convierte a Base64; evita mandarla dos veces si se toca ENVIAR de nuevo.
+    var convirtiendo by remember { mutableStateOf(false) }
 
     // Cuando el ViewModel termina de buscar: navega con el resultado, o muestra el error con REINTENTAR
     LaunchedEffect(uiState) {
@@ -117,21 +122,31 @@ fun PantallaEscaneoPortada(
 
     ContenidoPortada(
         imagenSeleccionada = imagenSeleccionada,
-        buscando = uiState is PortadaUiState.Buscando,
+        buscando = uiState is PortadaUiState.Buscando || convirtiendo,
         estadoSnackbar = estadoSnackbar,
         alVolver = alVolver,
         alPulsarGaleria = { selectorGaleria.launch("image/*") },
-        // Convierte la imagen a Base64 y la manda al ViewModel; si no se puede leer, avisa con un Snackbar
+        // Convierte la imagen a Base64 fuera del hilo principal y la manda al ViewModel; si no se puede leer, avisa con un Snackbar.
         alPulsarEnviar = {
             val imagen = imagenSeleccionada
-            if (imagen != null) {
-                try {
-                    val imagenBase64 = convertirImagenABase64(context, imagen)
-                    portadaViewModel.enviarPortada(imagenBase64)
-                } catch (e: Exception) {
-                    alcanceCorrutina.launch {
+            if (imagen != null && !convirtiendo) {
+                convirtiendo = true
+                alcanceCorrutina.launch {
+                    try {
+                        // Dispatchers.IO: leer y comprimir la imagen se hace en otro hilo para que la pantalla no se trabe.
+                        val imagenBase64 = withContext(Dispatchers.IO) {
+                            convertirImagenABase64(context, imagen)
+                        }
+                        portadaViewModel.enviarPortada(imagenBase64)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // Se apaga antes del Snackbar porque showSnackbar espera hasta que el aviso se cierre (si no, ENVIAR seguiría cargando).
+                        convirtiendo = false
                         // Texto fijo: si Android ya no deja leer la imagen (por ejemplo, después de cerrar la app en segundo plano), su error viene en inglés.
                         estadoSnackbar.showSnackbar("No se pudo leer la imagen")
+                    } finally {
+                        convirtiendo = false
                     }
                 }
             }
@@ -225,7 +240,7 @@ private fun AreaImagenPortada(imagenSeleccionada: Uri?, modifier: Modifier = Mod
 }
 
 // Panel inferior con el aviso de la IA, el botón ENVIAR (activo solo si hay imagen) y el botón para abrir la galería.
-// Mientras se busca, ENVIAR queda deshabilitado y muestra un indicador de carga en vez del texto.
+// Mientras se convierte la imagen o se busca, ENVIAR queda deshabilitado y muestra un indicador de carga en vez del texto.
 @Composable
 private fun PanelInferiorPortada(
     hayImagen: Boolean,
