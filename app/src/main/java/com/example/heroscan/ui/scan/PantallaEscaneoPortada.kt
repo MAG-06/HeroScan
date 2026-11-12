@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -175,7 +174,7 @@ private fun ContenidoPortada(
                     titulo = "ESCANEAR COMIC",
                     alVolver = alVolver,
                     iconoDerecho = Icons.Filled.QrCodeScanner,
-                    colorIconoDerecho = Color.Black,
+                    colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
                     fondoIconoDerecho = MaterialTheme.colorScheme.primary
                 )
 
@@ -227,7 +226,7 @@ private fun AreaImagenPortada(imagenSeleccionada: Uri?, modifier: Modifier = Mod
             } else {
                 Text(
                     text = "SIN IMAGEN SELECCIONADA",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -251,7 +250,7 @@ private fun PanelInferiorPortada(
     PanelInferior {
         Text(
             text = "SUBE LA IMAGEN",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold
         )
@@ -289,7 +288,7 @@ private fun PanelInferiorPortada(
             } else {
                 Text(
                     text = "ENVIAR",
-                    color = if (hayImagen) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (hayImagen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold
                 )
             }

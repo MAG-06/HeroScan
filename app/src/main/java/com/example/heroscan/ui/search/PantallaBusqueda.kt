@@ -126,7 +126,7 @@ private fun ContenidoBusqueda(
                 titulo = "BUSCAR CÓMIC",
                 alVolver = alVolver,
                 iconoDerecho = Icons.Filled.CenterFocusStrong,
-                colorIconoDerecho = Color.White,
+                colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
                 fondoIconoDerecho = MaterialTheme.colorScheme.primary
             )
 
@@ -235,8 +235,8 @@ private fun CampoBusqueda(
             unfocusedBorderColor = Color.Transparent,
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             cursorColor = MaterialTheme.colorScheme.primary,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
             unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
@@ -259,7 +259,7 @@ private fun ChipFiltro(
         label = {
             Text(
                 text = texto,
-                color = if (seleccionado) Color.Black else Color.White,
+                color = if (seleccionado) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp, letterSpacing = 0.1.sp),
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 8.dp)
@@ -314,7 +314,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -324,7 +324,7 @@ private fun ContenidoBusquedaVacia(modifier: Modifier = Modifier) {
 
         Text(
             text = "DESCUBRE TU PRÓXIMO\nCÓMIC",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
@@ -353,7 +353,7 @@ private fun ContenidoVariosResultados(
     Column(modifier = modifier.padding(horizontal = 16.dp)) {
         Text(
             text = "Se encontraron ${resultados.size} resultados",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold
         )
@@ -410,7 +410,7 @@ private fun TarjetaResultadoComic(
         Column {
             Text(
                 text = "${comic.titulo} #${comic.numero}",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,

@@ -21,7 +21,7 @@ val CapaOscura = Color(0x73121826)
 // Segundo color del degradado que se muestra cuando un cómic no tiene portada
 val FondoPortadaVacia = Color(0xFF1A1830)
 
-// Borde de los campos del formulario de Acceso
+// Borde de los campos del formulario de Acceso y fondo del Snackbar
 val BordeCampo = Color(0xFF334155)
 
 // Gris oscuro para lo apagado: segmento inactivo del medidor, fondo del botón deshabilitado y borde del diálogo
