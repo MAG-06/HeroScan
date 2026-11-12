@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -133,7 +132,7 @@ private fun ContenidoEscaneo(
                 titulo = "ESCANEAR CÓMIC",
                 alVolver = alVolver,
                 iconoDerecho = Icons.Filled.QrCodeScanner,
-                colorIconoDerecho = Color.Black,
+                colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
                 fondoIconoDerecho = MaterialTheme.colorScheme.primary
             )
 
@@ -162,7 +161,7 @@ private fun ContenidoEscaneo(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = if (uiState.sinConexion) "Problema de conexión" else "No se encontró el cómic",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -277,7 +276,7 @@ private fun ContenidoInferiorEscaneo(
         if (codigoDetectado == null) {
             Text(
                 text = "APUNTA AL CÓDIGO DE BARRAS",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -307,7 +306,7 @@ private fun ContenidoInferiorEscaneo(
             BotonCircular(
                 icono = Icons.Filled.FlashOn,
                 texto = "LINTERNA",
-                colorIcono = if (linternaEncendida) Color.Black else Color.White,
+                colorIcono = if (linternaEncendida) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                 colorFondo = if (linternaEncendida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                 relleno = true,
                 alPulsar = alPulsarLinterna

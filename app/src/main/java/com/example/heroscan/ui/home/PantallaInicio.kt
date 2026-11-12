@@ -239,13 +239,13 @@ private fun TarjetaEscaneo(alEscanear: () -> Unit, mostrarPistaAgitar: Boolean) 
 
                 Text(
                     text = "ESCANEAR CÓMIC",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = "Apunta al código de barras del cómic",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleSmall
                 )
 
@@ -297,7 +297,7 @@ private fun TarjetaOpcionBusqueda(
                 Icon(imageVector = icono, contentDescription = null, tint = colorContenido, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = titulo, color = if (habilitada) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            Text(text = titulo, color = if (habilitada) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = descripcion, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
