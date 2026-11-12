@@ -64,6 +64,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -519,7 +522,7 @@ fun ContenidoCargando(texto: String, modifier: Modifier = Modifier) {
     }
 }
 
-// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Detalle); si no, no lo muestra (Búsqueda).
+// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Búsqueda y Detalle lo pasan); si no, no lo muestra.
 @Composable
 fun ContenidoError(
     mensaje: String,
@@ -546,7 +549,9 @@ fun ContenidoError(
             text = mensaje,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.titleSmall,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            // liveRegion (como en la guía LLM): TalkBack lee el mensaje de error apenas aparece, sin que el usuario lo busque.
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         )
         if (alReintentar != null) {
             Spacer(modifier = Modifier.height(16.dp))
