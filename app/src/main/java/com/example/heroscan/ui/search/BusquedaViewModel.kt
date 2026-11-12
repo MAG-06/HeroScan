@@ -94,6 +94,11 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
         }
     }
 
+    // Se llama desde el botón REINTENTAR después de un error: repite la búsqueda con el texto y el filtro que hay ahora (si el usuario los cambió, busca lo nuevo; si la barra está vacía, no hace nada).
+    fun reintentar() {
+        buscar()
+    }
+
     // Busca cómics cuyo título de serie contenga el texto escrito.
     private fun buscarPorTitulo() {
         // No viene de un código de barras, así que el detalle no debe mostrar un tipo de código viejo

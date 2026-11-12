@@ -17,7 +17,8 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 - **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (12, 13 o 17 dígitos). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web.
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
 - Vibración al encontrar un cómic con el escáner y manejo del permiso de cámara.
-- **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle y la búsqueda por portada se puede reintentar.
+- **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle, la búsqueda y la búsqueda por portada se puede reintentar.
+- **Accesibilidad:** los chips de filtro y los botones de texto (como REINTENTAR) tienen un área para tocar de 48 dp; los íconos que hacen algo (Volver, Limpiar búsqueda, Mostrar/Ocultar contraseña, Linterna) y las imágenes de las portadas y los personajes tienen descripción para TalkBack, y TalkBack lee los mensajes de error de Búsqueda, Detalle y Escaneo apenas aparecen.
 - **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos: desde el 5.º fallo seguido hay que esperar 30 segundos, y cada fallo más duplica la espera hasta 15 minutos. El bloqueo sigue aunque se cierre la app y se borra al iniciar sesión bien.
 - **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
 

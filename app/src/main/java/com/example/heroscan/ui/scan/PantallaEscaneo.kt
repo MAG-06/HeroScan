@@ -30,6 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -169,7 +172,9 @@ private fun ContenidoEscaneo(
                         Text(
                             text = uiState.mensaje,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.titleSmall
+                            style = MaterialTheme.typography.titleSmall,
+                            // liveRegion (como en la guía LLM): TalkBack lee el mensaje de error apenas aparece, sin que el usuario lo busque.
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.

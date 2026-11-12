@@ -99,7 +99,8 @@ fun PantallaBusqueda(
         alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
         alBuscar = busquedaViewModel::buscar,
         alSeleccionarFiltro = busquedaViewModel::seleccionarFiltro,
-        alSeleccionarComic = busquedaViewModel::seleccionarComic
+        alSeleccionarComic = busquedaViewModel::seleccionarComic,
+        alReintentar = busquedaViewModel::reintentar
     )
 }
 
@@ -114,7 +115,8 @@ private fun ContenidoBusqueda(
     alCambiarTexto: (String) -> Unit = {},
     alBuscar: () -> Unit = {},
     alSeleccionarFiltro: (String) -> Unit = {},
-    alSeleccionarComic: (Int) -> Unit = {}
+    alSeleccionarComic: (Int) -> Unit = {},
+    alReintentar: () -> Unit = {}
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -173,7 +175,8 @@ private fun ContenidoBusqueda(
                     ContenidoError(
                         mensaje = uiState.mensaje,
                         sinConexion = uiState.sinConexion,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        alReintentar = alReintentar
                     )
                 }
                 is BusquedaUiState.VariosResultados -> {
@@ -496,7 +499,7 @@ private fun PreviewBusquedaErrorNoEncontrado() {
     }
 }
 
-// Frame "Búsqueda · Error · Sin conexión": no hay internet o el servidor tardó demasiado.
+// Frame "Búsqueda · Error · Sin conexión": no hay internet o el servidor tardó demasiado, con REINTENTAR.
 @Preview(name = "Búsqueda · Error · Sin conexión", widthDp = 390, heightDp = 844)
 @Composable
 private fun PreviewBusquedaErrorSinConexion() {
