@@ -96,12 +96,12 @@ fun LogoHeroScan() {
                 Icon(
                     imageVector = Icons.Filled.AutoAwesome,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "HERO", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+            Text(text = "HERO", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
             Text(text = "SCAN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
         }
     }
@@ -120,7 +120,7 @@ private fun BotonVolver(alPulsar: () -> Unit) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Volver",
-            tint = Color.White
+            tint = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -131,7 +131,7 @@ fun BarraSuperior(
     titulo: String,
     alVolver: () -> Unit,
     iconoDerecho: ImageVector,
-    colorIconoDerecho: Color = Color.White,
+    colorIconoDerecho: Color = MaterialTheme.colorScheme.onSurface,
     fondoIconoDerecho: Color = MaterialTheme.colorScheme.surface
 ) {
     Row(
@@ -145,7 +145,7 @@ fun BarraSuperior(
 
         Text(
             text = titulo,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
@@ -190,7 +190,7 @@ fun BotonAccionPrincipal(
             .fillMaxWidth()
             .height(52.dp)
     ) {
-        val colorContenido = if (habilitado) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+        val colorContenido = if (habilitado) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
         Icon(imageVector = icono, contentDescription = null, tint = colorContenido)
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = texto, color = colorContenido, fontWeight = FontWeight.Bold)
@@ -319,7 +319,7 @@ fun AreaEscaneo(modifier: Modifier = Modifier, contenido: @Composable BoxScope.(
 fun BloqueTituloPestana(titulo: String, subtitulo: String) {
     Text(
         text = titulo,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onBackground,
         style = MaterialTheme.typography.displayMedium,
         fontWeight = FontWeight.ExtraBold,
         lineHeight = 30.sp
@@ -536,7 +536,7 @@ fun ContenidoError(
     ) {
         Text(
             text = if (sinConexion) "Problema de conexión" else "No se encontró el cómic",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center

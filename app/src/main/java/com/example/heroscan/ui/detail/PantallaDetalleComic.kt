@@ -237,7 +237,7 @@ private fun BloqueTituloComic(
     ) {
         Text(
             text = titulo,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             maxLines = 1,
@@ -253,7 +253,7 @@ private fun BloqueTituloComic(
         ) {
             Text(
                 text = "#$numero",
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -284,7 +284,7 @@ private fun SeccionCreditos(creadores: List<String>) {
             creadoresVisibles.forEach { nombre ->
                 Text(
                     text = nombre,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
