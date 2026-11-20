@@ -128,7 +128,8 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-89 pruebas JUnit 4 en `app/src/test` (88 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña y límite de intentos. No necesitan celular ni internet.
+119 pruebas JUnit 4 en `app/src/test` (118 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos y mensajes de error de Metron, Gemini y Tavily. No necesitan celular ni internet.
+Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
 ```
