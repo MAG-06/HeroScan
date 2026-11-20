@@ -11,6 +11,8 @@ import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
+import com.example.heroscan.util.BloqueoCodigo
+import com.example.heroscan.util.actualizarBloqueo
 import com.example.heroscan.util.clasificarCodigoEscaneado
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -43,9 +45,8 @@ class EscaneoViewModel : ViewModel() {
     private val _linternaEncendida = MutableStateFlow<Boolean>(false)
     val linternaEncendida: StateFlow<Boolean> = _linternaEncendida
 
-    // Último código que ya se buscó con éxito. Se ignora para que, al volver del detalle con la cámara
-    // todavía apuntando al mismo cómic, no se vuelva a abrir el detalle solo.
-    private var codigoYaProcesado: String? = null
+    // Último código que se buscó. No se vuelve a buscar hasta que la cámara pase unos cuadros seguidos sin verlo, para que al volver con la cámara todavía apuntando al mismo cómic no se abra solo otra vez.
+    private var bloqueo = BloqueoCodigo(codigoBloqueado = null, cuadrosSinVerlo = 0)
 
     private var camara: Camera? = null
 
@@ -97,10 +98,13 @@ class EscaneoViewModel : ViewModel() {
                     val valor = primerCodigo?.rawValue
                     val formato = primerCodigo?.format
 
+                    // Actualiza el bloqueo con lo que vio este cuadro (lo libera si la cámara lleva un rato sin ver ese código).
+                    bloqueo = actualizarBloqueo(bloqueo, valor)
+
                     // Solo se acepta un código si la pantalla está escaneando (no buscando ni mostrando un error)
-                    // y si no es el mismo que ya se encontró antes
+                    // y si no es el código bloqueado
                     if (valor != null && formato != null &&
-                        valor != codigoYaProcesado &&
+                        valor != bloqueo.codigoBloqueado &&
                         _uiState.value is EscaneoUiState.Escaneando
                     ) {
                         val tipo = clasificarCodigoEscaneado(valor, formato)
@@ -166,9 +170,9 @@ class EscaneoViewModel : ViewModel() {
     }
 
     // Se llama después de navegar con un resultado (detalle o lista): recuerda el código para no
-    // volver a buscarlo en cuanto el usuario regrese, y deja la cámara lista para escanear otro.
+    // volver a buscarlo en cuanto el usuario regrese hasta que la cámara deje de verlo un momento, y deja la cámara lista para escanear otro.
     fun prepararNuevoEscaneo() {
-        codigoYaProcesado = _codigoDetectado.value
+        bloqueo = BloqueoCodigo(_codigoDetectado.value, 0)
         _codigoDetectado.value = null
         _tipoCodigoDetectado.value = null
         _uiState.value = EscaneoUiState.Escaneando
@@ -177,7 +181,7 @@ class EscaneoViewModel : ViewModel() {
     // Se llama desde el botón REINTENTAR después de un error: vuelve a escanear y permite leer
     // otra vez el mismo código (por ejemplo, si falló por no tener internet).
     fun reintentar() {
-        codigoYaProcesado = null
+        bloqueo = BloqueoCodigo(null, 0)
         _codigoDetectado.value = null
         _tipoCodigoDetectado.value = null
         _uiState.value = EscaneoUiState.Escaneando
