@@ -10,7 +10,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 
 ## Funcionalidades
 
-- **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna. Si el código es un ISBN-13 (los tomos en español), la app lo busca en la web (ver "Buscar un ISBN en la web").
+- **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna. Si el código es un ISBN-13 (los tomos en español), la app lo busca en la web (ver "Buscar un ISBN en la web"). Al volver de un resultado, el mismo cómic no se abre solo otra vez; basta con apartarlo de la cámara un momento para volver a escanearlo.
 - **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro). El chip "O AGITA EL TELÉFONO" solo aparece si el teléfono tiene acelerómetro.
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
 - **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés y el número. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
@@ -60,7 +60,7 @@ com.example.heroscan
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
 ├── repository/   ComicRepository y CuentaRepository
-├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
+├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -128,7 +128,7 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-119 pruebas JUnit 4 en `app/src/test` (118 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos y mensajes de error de Metron, Gemini y Tavily. No necesitan celular ni internet.
+128 pruebas JUnit 4 en `app/src/test` (127 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, y el bloqueo del escáner. No necesitan celular ni internet.
 Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
@@ -151,6 +151,7 @@ gradlew.bat testDebugUnitTest
 - Las descripciones de más de 500 caracteres se muestran en inglés (límite de MyMemory).
 - Metron (cuenta gratuita) acepta unas 20 peticiones por minuto y abrir un cómic cuesta varias (el cómic y la imagen de cada personaje). Si se abren muchos cómics seguidos, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
 - El bloqueo por intentos fallidos usa la hora del teléfono: si se adelanta el reloj, termina antes (si se atrasa, la espera nunca pasa de 15 minutos). Borrar los datos de la app o reinstalarla también lo quita.
+- El escáner suelta el último código después de 15 cuadros seguidos sin verlo (cerca de 1 segundo). Si al volver de un resultado la cámara tarda en enfocar, el mismo cómic podría abrirse otra vez; se ajusta con `CUADROS_PARA_LIBERAR` en `util/BloqueoCodigo.kt`.
 
 ## Seguridad
 
