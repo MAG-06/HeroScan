@@ -19,6 +19,12 @@ class ClasificadorCodigoTest {
         assertEquals("0306406152", limpiarCodigo("  0 306 40615 2 "))
     }
 
+    // Comprueba que limpiarCodigo quita las tabulaciones y los saltos de línea de los extremos (por ejemplo, al pegar un código copiado).
+    @Test
+    fun limpiarCodigoQuitaTabulacionesYSaltosDeLinea() {
+        assertEquals("9780306406157", limpiarCodigo("\t9780306406157\n"))
+    }
+
     // Comprueba que un código escrito de 10 caracteres es ISBN-10.
     @Test
     fun escritoDeDiezEsIsbn10() {

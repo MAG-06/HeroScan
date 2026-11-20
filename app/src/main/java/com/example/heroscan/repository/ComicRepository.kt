@@ -384,38 +384,38 @@ class ComicRepository(
 
         return datos ?: throw Exception(mensajeIlegible)
     }
+}
 
-    // Traduce el código de error HTTP de Metron a un mensaje en español (401/403 token, 404 no encontrado, 429 demasiadas peticiones, 500 o más servidor caído).
-    private fun mensajeErrorMetron(codigo: Int): String {
-        return when (codigo) {
-            401, 403 -> "Falta configurar el token de Metron o no es válido"
-            404 -> "No se encontró el cómic en Metron"
-            429 -> "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
-            in 500..599 -> "Metron no está respondiendo. Intenta más tarde."
-            else -> "Error al consultar Metron (código $codigo)"
-        }
+// Traduce el código de error HTTP de Metron a un mensaje en español (401/403 token, 404 no encontrado, 429 demasiadas peticiones, 500 a 599 servidor caído).
+internal fun mensajeErrorMetron(codigo: Int): String {
+    return when (codigo) {
+        401, 403 -> "Falta configurar el token de Metron o no es válido"
+        404 -> "No se encontró el cómic en Metron"
+        429 -> "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
+        in 500..599 -> "Metron no está respondiendo. Intenta más tarde."
+        else -> "Error al consultar Metron (código $codigo)"
     }
+}
 
-    // Convierte el código de error HTTP de Gemini en un mensaje en español para el usuario.
-    private fun mensajeErrorGemini(codigo: Int): String {
-        return when (codigo) {
-            400 -> "Petición inválida a la IA"
-            403 -> "Clave de Gemini inválida o sin permisos"
-            404 -> "Modelo de Gemini no encontrado"
-            429 -> "Límite de uso de la IA alcanzado, intenta más tarde"
-            503 -> "El servicio de la IA está saturado, intenta más tarde"
-            else -> "Error al consultar la IA (código $codigo)"
-        }
+// Convierte el código de error HTTP de Gemini en un mensaje en español para el usuario.
+internal fun mensajeErrorGemini(codigo: Int): String {
+    return when (codigo) {
+        400 -> "Petición inválida a la IA"
+        403 -> "Clave de Gemini inválida o sin permisos"
+        404 -> "Modelo de Gemini no encontrado"
+        429 -> "Límite de uso de la IA alcanzado, intenta más tarde"
+        503 -> "El servicio de la IA está saturado, intenta más tarde"
+        else -> "Error al consultar la IA (código $codigo)"
     }
+}
 
-    // Convierte el código de error HTTP de Tavily en un mensaje en español para el usuario.
-    private fun mensajeErrorTavily(codigo: Int): String {
-        return when (codigo) {
-            401 -> "Falta configurar la clave de Tavily o no es válida"
-            429 -> "Demasiadas búsquedas web seguidas. Espera un momento e intenta de nuevo."
-            432, 433 -> "Se acabaron las búsquedas web gratis de este mes"
-            in 500..599 -> "El buscador web no está respondiendo. Intenta más tarde."
-            else -> "Error al buscar en la web (código $codigo)"
-        }
+// Convierte el código de error HTTP de Tavily en un mensaje en español para el usuario.
+internal fun mensajeErrorTavily(codigo: Int): String {
+    return when (codigo) {
+        401 -> "Falta configurar la clave de Tavily o no es válida"
+        429 -> "Demasiadas búsquedas web seguidas. Espera un momento e intenta de nuevo."
+        432, 433 -> "Se acabaron las búsquedas web gratis de este mes"
+        in 500..599 -> "El buscador web no está respondiendo. Intenta más tarde."
+        else -> "Error al buscar en la web (código $codigo)"
     }
 }
