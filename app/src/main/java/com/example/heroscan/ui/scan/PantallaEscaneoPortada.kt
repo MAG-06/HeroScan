@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -55,6 +57,7 @@ import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
+import com.example.heroscan.ui.components.rememberPedirPermisoNotificaciones
 import com.example.heroscan.ui.theme.CapaOscura
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.convertirImagenABase64
@@ -65,7 +68,7 @@ import kotlinx.coroutines.withContext
 
 // Pantalla para escanear la portada del cómic a partir de una imagen elegida de la galería.
 // Al pulsar ENVIAR convierte la imagen a Base64 fuera del hilo principal, se la pasa al ViewModel y navega cuando hay resultado.
-// Crea (o recibe) el ViewModel, guarda la imagen elegida, abre la galería y muestra el aviso (Snackbar), y le pasa todo a ContenidoPortada, que solo dibuja.
+// Crea (o recibe) el ViewModel, guarda la imagen elegida, abre la galería y muestra el aviso (Snackbar), y le pasa todo a ContenidoPortada, que solo dibuja. También pide el permiso de notificaciones cuando empieza una búsqueda lenta.
 @Composable
 fun PantallaEscaneoPortada(
     alVolver: () -> Unit = {},
@@ -90,11 +93,23 @@ fun PantallaEscaneoPortada(
     val alcanceCorrutina = rememberCoroutineScope()
     // true mientras la imagen se convierte a Base64; evita mandarla dos veces si se toca ENVIAR de nuevo.
     var convirtiendo by remember { mutableStateOf(false) }
+    // Pide el permiso de notificaciones (o avisa con un Snackbar) cuando empieza la búsqueda por portada.
+    val pedirPermisoNotificaciones = rememberPedirPermisoNotificaciones(estadoSnackbar)
+
+    // Le avisa al ViewModel si la pantalla se ve o no, para que avise con una notificación si la búsqueda termina con la app fuera de la vista.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        portadaViewModel.cambiarVisibilidad(true)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        portadaViewModel.cambiarVisibilidad(false)
+    }
 
     // Cuando el ViewModel termina de buscar: navega con el resultado, o muestra el error con REINTENTAR
     LaunchedEffect(uiState) {
         // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
         when (val estado = uiState) {
+            is PortadaUiState.Buscando -> pedirPermisoNotificaciones()
+
             is PortadaUiState.Encontrado -> {
                 alEncontrarComic(estado.idComic, estado.tipoCodigo)
                 portadaViewModel.prepararNuevaBusqueda()

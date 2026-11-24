@@ -144,7 +144,9 @@ class ComicRepository(
         val detalle = try {
             metronApi.obtenerDetalleComic(idComic)
         } catch (e: HttpException) {
-            // Si Metron responde con un error HTTP, se cambia por un mensaje en español
+            // 404: el cómic no existe; la pantalla muestra "No se encontró el cómic" sin REINTENTAR
+            if (e.code() == 404) throw ComicNoEncontradoException()
+            // Si Metron responde con otro error HTTP, se cambia por un mensaje en español
             throw Exception(mensajeErrorMetron(e.code()))
         }
         val descripcion = traducirDescripcion(detalle.desc ?: "Sin descripción")

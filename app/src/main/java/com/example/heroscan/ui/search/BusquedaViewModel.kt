@@ -1,7 +1,8 @@
 package com.example.heroscan.ui.search
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.example.heroscan.model.ComicResumen
@@ -12,8 +13,11 @@ import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
+import com.example.heroscan.util.avisarComicEncontrado
+import com.example.heroscan.util.avisarVariosComics
 import com.example.heroscan.util.clasificarCodigoEscrito
 import com.example.heroscan.util.limpiarCodigo
+import com.example.heroscan.util.quitarAvisos
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -23,7 +27,8 @@ import kotlin.coroutines.cancellation.CancellationException
 // Maneja la pantalla de búsqueda: guarda el texto y el filtro, decide qué tipo de búsqueda hacer
 // y pide los cómics al repositorio.
 // Recibe un SavedStateHandle: Navigation Compose se lo entrega automáticamente con los argumentos de la ruta, y aquí también se guardan el texto y el filtro.
-class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewModel() {
+// Es AndroidViewModel: también recibe la Application, para avisar con una notificación si la búsqueda en la web termina con la app fuera de la vista.
+class BusquedaViewModel(private val app: Application, private val estadoGuardado: SavedStateHandle) : AndroidViewModel(app) {
 
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
@@ -47,6 +52,16 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
     // Última lista de resultados de la que el usuario eligió un cómic.
     // Se guarda para volver a mostrarla cuando regresa del detalle.
     private var ultimosResultados: List<ComicResumen> = emptyList()
+
+    // true mientras la pantalla se ve. La pantalla lo cambia en ON_START y ON_STOP.
+    private var appVisible = true
+
+    // La pantalla avisa si se ve o no (ON_START / ON_STOP).
+    // Al volver a verse quita los avisos que quedaron (por ejemplo, "varios" si el usuario volvió con el ícono).
+    fun cambiarVisibilidad(visible: Boolean) {
+        appVisible = visible
+        if (visible) quitarAvisos(app)
+    }
 
     // "init" se ejecuta una sola vez, cuando se crea el ViewModel.
     // Si ya hay un texto guardado, Android cerró la app en segundo plano: se deja lo guardado y no se busca, para no gastar peticiones a Metron.
@@ -165,8 +180,11 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
         _uiState.value = BusquedaUiState.CargandoEnLaWeb
 
         viewModelScope.launch {
+            var tituloIa = ""
             _uiState.value = try {
-                when (val resultado = repositorio.buscarCodigoEnLaWeb(_textoBusqueda.value).resultado) {
+                val resultadoWeb = repositorio.buscarCodigoEnLaWeb(_textoBusqueda.value)
+                tituloIa = resultadoWeb.titulo
+                when (val resultado = resultadoWeb.resultado) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
                 }
@@ -178,6 +196,18 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
+            avisarSiNoSeVe(tituloIa)
+        }
+    }
+
+    // Si la búsqueda en la web terminó con la app fuera de la vista, avisa con una notificación (uno o varios). Los errores no avisan.
+    private fun avisarSiNoSeVe(tituloIa: String) {
+        if (appVisible) return
+        val estado = _uiState.value
+        when (estado) {
+            is BusquedaUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloIa)
+            is BusquedaUiState.VariosResultados -> avisarVariosComics(app)
+            else -> {}
         }
     }
 
@@ -238,6 +268,7 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
         } else {
             BusquedaUiState.Inicial
         }
+        quitarAvisos(app)
     }
 
     // Nombres con los que se guardan el texto y el filtro en el SavedStateHandle.
