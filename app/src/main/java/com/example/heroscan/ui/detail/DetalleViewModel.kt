@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.example.heroscan.navigation.RutaDetalle
 import com.example.heroscan.network.ClienteRetrofit
+import com.example.heroscan.repository.ComicNoEncontradoException
 import com.example.heroscan.repository.ComicRepository
 import com.example.heroscan.repository.MENSAJE_ERROR_DESCONOCIDO
 import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
@@ -30,7 +31,7 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
     // Repositorio que consulta Metron y traduce la descripción
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
-    // Estado que dibuja la pantalla: cargando, listo o error
+    // Estado que dibuja la pantalla: cargando, listo, error o no encontrado
     private val _uiState = MutableStateFlow<DetalleUiState>(DetalleUiState.Cargando)
     val uiState: StateFlow<DetalleUiState> = _uiState
 
@@ -52,6 +53,9 @@ class DetalleViewModel(estadoGuardado: SavedStateHandle) : ViewModel() {
                 DetalleUiState.Error(MENSAJE_SIN_CONEXION_COMICS, sinConexion = true)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: ComicNoEncontradoException) {
+                // 404 de Metron: va antes del catch (e: Exception) para que no se vuelva un error con REINTENTAR
+                DetalleUiState.NoEncontrado
             } catch (e: Exception) {
                 DetalleUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }

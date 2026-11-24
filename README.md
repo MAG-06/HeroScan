@@ -15,13 +15,21 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
 - **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés y el número. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
 - **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (10, 12, 13 o 17 dígitos; los de 10 son ISBN-10, que todavía no se soportan). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web.
-- **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen.
+- **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen. Si el cómic no existe en Metron (por ejemplo, un enlace con un id equivocado), muestra "No se encontró el cómic" sin REINTENTAR.
 - **Teléfono girado:** en Escanear y Buscar por portada se puede bajar con scroll hasta los botones.
-- Vibración al encontrar un cómic con el escáner y manejo del permiso de cámara.
-- **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle, la búsqueda y la búsqueda por portada se puede reintentar (en la búsqueda no se ofrece REINTENTAR si el código no es válido o es un ISBN-10, porque daría el mismo error).
+- Vibración al encontrar un cómic con el escáner y manejo de los permisos de cámara y de notificaciones (ver "Permisos").
+- **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle, la búsqueda y la búsqueda por portada se puede reintentar (no se ofrece REINTENTAR en la búsqueda si el código no es válido o es un ISBN-10, ni en el detalle si el cómic no existe, porque daría el mismo error).
 - **Accesibilidad:** los chips de filtro, los botones de texto (como REINTENTAR) y el botón Volver tienen un área para tocar de 48 dp; los íconos que hacen algo (Volver, Limpiar búsqueda, Mostrar/Ocultar contraseña, Linterna) y las imágenes de las portadas y los personajes tienen descripción para TalkBack, y TalkBack lee los mensajes de error de Búsqueda, Detalle y Escaneo apenas aparecen.
 - **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos: desde el 5.º fallo seguido hay que esperar 30 segundos, y cada fallo más duplica la espera hasta 15 minutos. El bloqueo sigue aunque se cierre la app y se borra al iniciar sesión bien.
 - **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
+- **Aviso al terminar una búsqueda lenta:** si sales de la app mientras busca un ISBN-13 en la web o una portada con la IA, al terminar baja un aviso flotante (heads-up). Con un resultado dice "Encontramos tu cómic" y tocarlo abre su detalle; con varios dice "Encontramos varios cómics" y tocarlo abre la app en la lista. Con un error o con la app a la vista no avisa, y el aviso se borra al volver a la app.
+- **Enlace al detalle:** `heroscan://detalle/{id}/{tipo}` abre el detalle de un cómic (lo usa el aviso). Solo funciona con la sesión iniciada; sin sesión se abre Acceso.
+
+## Permisos
+
+- **Cámara:** se pide al abrir el escáner.
+- **Notificaciones (`POST_NOTIFICATIONS`, Android 13 o más):** se pide cuando empieza una búsqueda lenta (ISBN-13 en la web o portada), no al abrir la app. La primera vez sale el diálogo del sistema; si se negó una vez, un aviso abajo explica para qué sirve, con PERMITIR; si se negó para siempre o las notificaciones están apagadas, el aviso lleva a AJUSTES. Ese aviso sale una sola vez por sesión. Sin el permiso la app funciona igual, solo no avisa.
+- **Internet y vibración:** no se piden al usuario.
 
 ## Tecnologías
 
@@ -34,7 +42,8 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Red | Retrofit, Gson, OkHttp |
 | Imágenes | Coil |
 | Estado de las pantallas | `StateFlow` + `collectAsStateWithLifecycle` |
-| Almacenamiento local | DataStore Preferences (bloqueo por intentos de inicio de sesión) |
+| Almacenamiento local | DataStore Preferences (bloqueo por intentos de inicio de sesión y si ya se pidió el permiso de notificaciones) |
+| Notificaciones | `NotificationChannel`, `NotificationCompat`, `PendingIntent` (`FLAG_IMMUTABLE`), enlace profundo con `navDeepLink` |
 | Cuentas y datos | Firebase Authentication, Cloud Firestore (Firebase BoM 34.19.0) |
 | APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas y de los resultados de la búsqueda web), [Tavily](https://tavily.com) (búsqueda web de ISBN) |
 
@@ -49,6 +58,9 @@ UI (Compose) → ViewModel → Repository → Retrofit / API
 - Cada pantalla con lógica tiene su propio ViewModel (`EscaneoViewModel`, `BusquedaViewModel`, `PortadaViewModel`, `DetalleViewModel`).
 - `AccesoViewModel` maneja iniciar sesión, crear cuenta y recuperar la contraseña; `PerfilViewModel` da el correo de la cuenta y cierra la sesión; `SesionViewModel` decide si la app abre en Acceso o en Inicio.
 - `AccesoViewModel` es un `AndroidViewModel`: recibe la `Application` para usar `AlmacenIntentos`, que guarda con DataStore los fallos seguidos y la hora del bloqueo.
+- `EscaneoViewModel`, `PortadaViewModel` y `BusquedaViewModel` también son `AndroidViewModel`: reciben la `Application` para mostrar los avisos de las búsquedas lentas (`util/Avisos`). Cada una de esas pantallas le dice a su ViewModel si se ve o no (`LifecycleEventEffect` en `ON_START` / `ON_STOP`), y el ViewModel solo avisa si no se ve.
+- `obtenerDetalleComic` lanza `ComicNoEncontradoException` con el 404 de Metron, y `DetalleViewModel` la convierte en el estado `NoEncontrado`.
+- `NavegacionHeroScan` registra el enlace profundo del detalle solo si la app empezó en Inicio (con sesión).
 - `ComicRepository` recibe las APIs (Metron, MyMemory, Gemini y Tavily) por constructor y los ViewModels se las pasan. `ClienteRetrofit` tiene un Retrofit para cada una; los de Metron, Gemini y Tavily agregan su token o clave con un interceptor de OkHttp.
 - `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
 - Los estados de cada pantalla se manejan con `sealed interface` (cargando, encontrado, varios resultados, error).
@@ -60,8 +72,8 @@ com.example.heroscan
 ├── navigation/   NavHost, rutas y SesionViewModel
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
-├── repository/   ComicRepository y CuentaRepository
-├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
+├── repository/   ComicRepository, CuentaRepository y ComicNoEncontradoException
+├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código), Avisos (canal y notificaciones), EstadoPermiso (estados del permiso de notificaciones), AlmacenPermisos (si ya se pidió el permiso) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -129,7 +141,7 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-128 pruebas JUnit 4 en `app/src/test` (127 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, y el bloqueo del escáner. No necesitan celular ni internet.
+137 pruebas JUnit 4 en `app/src/test` (136 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
 Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
@@ -153,6 +165,9 @@ gradlew.bat testDebugUnitTest
 - Metron (cuenta gratuita) acepta unas 20 peticiones por minuto y abrir un cómic cuesta varias (el cómic y la imagen de cada personaje). Si se abren muchos cómics seguidos, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
 - El bloqueo por intentos fallidos usa la hora del teléfono: si se adelanta el reloj, termina antes (si se atrasa, la espera nunca pasa de 15 minutos). Borrar los datos de la app o reinstalarla también lo quita.
 - El escáner suelta el último código después de 15 cuadros seguidos sin verlo (cerca de 1 segundo). Si al volver de un resultado la cámara tarda en enfocar, el mismo cómic podría abrirse otra vez; se ajusta con `CUADROS_PARA_LIBERAR` en `util/BloqueoCodigo.kt`.
+- La búsqueda lenta no sigue si la app se cierra del todo (no se usa WorkManager): si Android la cierra o el usuario la quita de Recientes, la búsqueda se pierde y no llega el aviso.
+- Si la app ya está abierta, un enlace `heroscan://detalle` lanzado desde afuera (por ejemplo, con adb) se ignora y la app se queda donde estaba. El aviso no tiene este problema porque abre la app desde cero.
+- El aviso se decide por pantalla y no por toda la app: cada pantalla de búsqueda avisa cuando deja de verse.
 
 ## Seguridad
 
@@ -164,6 +179,7 @@ Medidas aplicadas siguiendo las guías de clase "Autenticación y seguridad con 
 - **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
 - **Resultados de la web separados de las instrucciones:** los resultados de la búsqueda web se le mandan a Gemini entre `<resultados>` y `</resultados>` y sin los `<` y `>` de las páginas, para que no se mezclen con las instrucciones (protección básica contra la inyección de prompt). Igual, lo que diga la IA siempre lo confirma Metron.
 - **Aviso de la IA en Portada:** debajo de "SUBE LA IMAGEN" se avisa que la IA puede equivocarse y que no se suban fotos con datos personales, porque en la capa gratuita de Gemini Google puede usar lo que se envía.
+- **Avisos seguros:** el intent del aviso usa `FLAG_IMMUTABLE` (otra app no puede cambiarlo) y el aviso no muestra datos de la cuenta, solo el título del cómic.
 
 **Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN`, `GEMINI_API_KEY` y `TAVILY_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
 

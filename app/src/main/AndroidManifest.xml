@@ -9,6 +9,8 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
 
 
 
@@ -32,6 +34,15 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Enlace profundo al detalle: heroscan://detalle/{idComic}/{tipoCodigo}. Lo usa el aviso "Encontramos tu cómic". -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="heroscan" android:host="detalle" />
             </intent-filter>
         </activity>
     </application>
