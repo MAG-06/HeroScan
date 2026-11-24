@@ -1,10 +1,13 @@
 package com.example.heroscan.ui.components
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -52,7 +55,11 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +70,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -71,10 +79,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.heroscan.R
 import com.example.heroscan.ui.theme.FondoCamara
 import com.example.heroscan.ui.theme.GrisInactivo
 import com.example.heroscan.ui.theme.TextoSobreCian
+import com.example.heroscan.util.AlmacenPermisos
+import com.example.heroscan.util.EstadoPermiso
+import com.example.heroscan.util.decidirEstadoPermiso
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 // Componentes reutilizables de la UI: logo, barra superior, botones, visor de escaneo, paneles, barra inferior, título de pestaña, diálogos y permiso de cámara.
 
@@ -446,6 +463,112 @@ suspend fun mostrarAvisoPermisoCamara(estadoSnackbar: SnackbarHostState, context
     }
 }
 
+// Textos del aviso del permiso de notificaciones (Snackbar) en los estados DebeExplicar y BloqueadoEnAjustes.
+private const val MENSAJE_EXPLICAR_NOTIFICACIONES = "Activa las notificaciones para que te avisemos cuando termine una búsqueda larga."
+private const val MENSAJE_NOTIFICACIONES_EN_AJUSTES = "Las notificaciones están desactivadas. Actívalas en Ajustes para que te avisemos cuando termine una búsqueda larga."
+
+// Recuerda, mientras la app está abierta, si ya se mostró el aviso del permiso de notificaciones (como un static de Java).
+// Así el Snackbar sale una sola vez por sesión de la app y no en cada búsqueda. Se borra al cerrar la app.
+private object SesionAvisoNotificaciones {
+    var avisoMostrado = false
+}
+
+// Prepara el permiso de notificaciones y devuelve la acción que lo pide. Las pantallas la llaman cuando empieza una búsqueda lenta.
+// Según el estado: Concedido no hace nada; PuedePedir abre el diálogo del sistema; DebeExplicar y BloqueadoEnAjustes
+// muestran un Snackbar (una vez por sesión) con PERMITIR o AJUSTES. La búsqueda sigue igual diga sí o no.
+// El estado se recalcula en ON_RESUME (por si el usuario lo cambió en Ajustes) y después de responder el diálogo.
+@Composable
+fun rememberPedirPermisoNotificaciones(estadoSnackbar: SnackbarHostState): () -> Unit {
+    val contexto = LocalContext.current
+    val actividad = LocalActivity.current
+    val alcanceCorrutina = rememberCoroutineScope()
+    val almacen = remember { AlmacenPermisos(contexto.applicationContext) }
+    // Hasta calcularlo por primera vez (en ON_RESUME) se toma como Concedido: así no se pide nada antes de saber.
+    var estado by remember { mutableStateOf<EstadoPermiso>(EstadoPermiso.Concedido) }
+
+    val solicitudPermiso = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // Diga sí o no, ya se preguntó: se guarda y se recalcula el estado.
+        alcanceCorrutina.launch {
+            almacen.guardarYaPreguntoNotificaciones()
+            estado = calcularEstadoNotificaciones(contexto, actividad, almacen)
+        }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        alcanceCorrutina.launch {
+            estado = calcularEstadoNotificaciones(contexto, actividad, almacen)
+        }
+    }
+
+    return {
+        when (estado) {
+            EstadoPermiso.Concedido -> {}
+
+            EstadoPermiso.PuedePedir -> solicitudPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+            EstadoPermiso.DebeExplicar -> {
+                if (!SesionAvisoNotificaciones.avisoMostrado && estadoSnackbar.currentSnackbarData == null) {
+                    SesionAvisoNotificaciones.avisoMostrado = true
+                    alcanceCorrutina.launch {
+                        val resultado = estadoSnackbar.showSnackbar(
+                            message = MENSAJE_EXPLICAR_NOTIFICACIONES,
+                            actionLabel = "PERMITIR",
+                            duration = SnackbarDuration.Long
+                        )
+                        if (resultado == SnackbarResult.ActionPerformed) {
+                            solicitudPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
+            }
+
+            EstadoPermiso.BloqueadoEnAjustes -> {
+                if (!SesionAvisoNotificaciones.avisoMostrado && estadoSnackbar.currentSnackbarData == null) {
+                    SesionAvisoNotificaciones.avisoMostrado = true
+                    alcanceCorrutina.launch {
+                        val resultado = estadoSnackbar.showSnackbar(
+                            message = MENSAJE_NOTIFICACIONES_EN_AJUSTES,
+                            actionLabel = "AJUSTES",
+                            duration = SnackbarDuration.Long
+                        )
+                        if (resultado == SnackbarResult.ActionPerformed) {
+                            abrirAjustesNotificaciones(contexto)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Junta lo que dice Android (permiso dado, si conviene explicar) con lo guardado (ya se preguntó) y decide el estado con decidirEstadoPermiso.
+private suspend fun calcularEstadoNotificaciones(contexto: Context, actividad: Activity?, almacen: AlmacenPermisos): EstadoPermiso {
+    val concedido = NotificationManagerCompat.from(contexto).areNotificationsEnabled()
+    val debeExplicar = actividad != null &&
+        ActivityCompat.shouldShowRequestPermissionRationale(actividad, Manifest.permission.POST_NOTIFICATIONS)
+    val yaPregunto = almacen.yaPreguntoNotificaciones.first()
+
+    return decidirEstadoPermiso(
+        concedido = concedido,
+        debeExplicar = debeExplicar,
+        yaPregunto = yaPregunto,
+        versionAndroid = Build.VERSION.SDK_INT,
+        versionQuePide = Build.VERSION_CODES.TIRAMISU
+    )
+}
+
+// Abre los ajustes de notificaciones de HeroScan (Android 8 o más) o, en Android 7, los ajustes generales de la app.
+private fun abrirAjustesNotificaciones(contexto: Context) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, contexto.packageName)
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", contexto.packageName, null))
+    }
+    contexto.startActivity(intent)
+}
+
 // Capa de diálogo: oscurece toda la pantalla y pone encima una tarjeta centrada con el contenido que se le pase.
 // La usan el diálogo de recuperar contraseña (Acceso) y el de cerrar sesión (Perfil).
 @Composable
@@ -534,7 +657,7 @@ fun ContenidoCargando(texto: String, modifier: Modifier = Modifier) {
     }
 }
 
-// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Detalle siempre lo pasa; Búsqueda, solo si repetir la búsqueda sirve); si no, no lo muestra.
+// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Detalle lo pasa salvo cuando el cómic no existe; Búsqueda, solo si repetir la búsqueda sirve); si no, no lo muestra.
 @Composable
 fun ContenidoError(
     mensaje: String,

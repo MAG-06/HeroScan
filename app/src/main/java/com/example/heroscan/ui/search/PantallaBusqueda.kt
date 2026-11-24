@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,11 +34,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +56,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -60,11 +66,12 @@ import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.ContenidoCargando
 import com.example.heroscan.ui.components.ContenidoError
+import com.example.heroscan.ui.components.rememberPedirPermisoNotificaciones
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
 // Pantalla de búsqueda por código, título o personaje escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
-// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoBusqueda, que solo dibuja.
+// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoBusqueda, que solo dibuja. También pide el permiso de notificaciones cuando empieza una búsqueda lenta.
 @Composable
 fun PantallaBusqueda(
     alVolver: () -> Unit = {},
@@ -75,11 +82,24 @@ fun PantallaBusqueda(
     val textoBusqueda by busquedaViewModel.textoBusqueda.collectAsStateWithLifecycle()
     val filtroSeleccionado by busquedaViewModel.filtroSeleccionado.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val estadoSnackbar = remember { SnackbarHostState() }
+    // Pide el permiso de notificaciones (o avisa con un Snackbar) cuando empieza la búsqueda en la web de un ISBN-13.
+    val pedirPermisoNotificaciones = rememberPedirPermisoNotificaciones(estadoSnackbar)
+
+    // Le avisa al ViewModel si la pantalla se ve o no, para que avise con una notificación si la búsqueda termina con la app fuera de la vista.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        busquedaViewModel.cambiarVisibilidad(true)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        busquedaViewModel.cambiarVisibilidad(false)
+    }
 
     // Cuando se encuentra el cómic: vibra, navega al detalle y reinicia el estado de la búsqueda
     LaunchedEffect(uiState) {
         // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
         when (val estado = uiState) {
+            is BusquedaUiState.CargandoEnLaWeb -> pedirPermisoNotificaciones()
+
             is BusquedaUiState.Encontrado -> {
                 vibrarDispositivo(context)
                 alEncontrarComic(estado.idComic, estado.tipoCodigo)
@@ -95,6 +115,7 @@ fun PantallaBusqueda(
         textoBusqueda = textoBusqueda,
         filtros = busquedaViewModel.filtros,
         filtroSeleccionado = filtroSeleccionado,
+        estadoSnackbar = estadoSnackbar,
         alVolver = alVolver,
         alCambiarTexto = busquedaViewModel::cambiarTextoBusqueda,
         alBuscar = busquedaViewModel::buscar,
@@ -111,6 +132,7 @@ private fun ContenidoBusqueda(
     textoBusqueda: String,
     filtros: List<String>,
     filtroSeleccionado: String,
+    estadoSnackbar: SnackbarHostState = remember { SnackbarHostState() },
     alVolver: () -> Unit = {},
     alCambiarTexto: (String) -> Unit = {},
     alBuscar: () -> Unit = {},
@@ -122,74 +144,83 @@ private fun ContenidoBusqueda(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        // Box: deja poner el aviso (Snackbar) abajo, encima de la columna, como en Portada.
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
-            BarraSuperior(
-                titulo = "BUSCAR CÓMIC",
-                alVolver = alVolver,
-                iconoDerecho = Icons.Filled.CenterFocusStrong,
-                colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
-                fondoIconoDerecho = MaterialTheme.colorScheme.primary
-            )
+                BarraSuperior(
+                    titulo = "BUSCAR CÓMIC",
+                    alVolver = alVolver,
+                    iconoDerecho = Icons.Filled.CenterFocusStrong,
+                    colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
+                    fondoIconoDerecho = MaterialTheme.colorScheme.primary
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            CampoBusqueda(
-                texto = textoBusqueda,
-                alCambiarTexto = alCambiarTexto,
-                alBuscar = alBuscar
-            )
+                CampoBusqueda(
+                    texto = textoBusqueda,
+                    alCambiarTexto = alCambiarTexto,
+                    alBuscar = alBuscar
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                filtros.forEach { filtro ->
-                    ChipFiltro(
-                        texto = filtro,
-                        seleccionado = filtroSeleccionado == filtro,
-                        alPulsar = { alSeleccionarFiltro(filtro) }
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    filtros.forEach { filtro ->
+                        ChipFiltro(
+                            texto = filtro,
+                            seleccionado = filtroSeleccionado == filtro,
+                            alPulsar = { alSeleccionarFiltro(filtro) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Lo que se muestra depende del estado de la búsqueda
+                when (uiState) {
+                    is BusquedaUiState.Inicial -> {
+                        ContenidoBusquedaVacia(modifier = Modifier.weight(1f))
+                    }
+                    is BusquedaUiState.Cargando -> {
+                        ContenidoCargando(texto = "Buscando cómic...", modifier = Modifier.weight(1f))
+                    }
+                    is BusquedaUiState.CargandoEnLaWeb -> {
+                        ContenidoCargando(texto = "Buscando en la web...", modifier = Modifier.weight(1f))
+                    }
+                    is BusquedaUiState.Error -> {
+                        ContenidoError(
+                            mensaje = uiState.mensaje,
+                            sinConexion = uiState.sinConexion,
+                            modifier = Modifier.weight(1f),
+                            alReintentar = if (uiState.sePuedeReintentar) alReintentar else null
+                        )
+                    }
+                    is BusquedaUiState.VariosResultados -> {
+                        ContenidoVariosResultados(
+                            resultados = uiState.resultados,
+                            alSeleccionar = alSeleccionarComic,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    is BusquedaUiState.Encontrado -> {
+                        // No muestra nada: el LaunchedEffect ya se encarga de navegar al detalle
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Lo que se muestra depende del estado de la búsqueda
-            when (uiState) {
-                is BusquedaUiState.Inicial -> {
-                    ContenidoBusquedaVacia(modifier = Modifier.weight(1f))
-                }
-                is BusquedaUiState.Cargando -> {
-                    ContenidoCargando(texto = "Buscando cómic...", modifier = Modifier.weight(1f))
-                }
-                is BusquedaUiState.CargandoEnLaWeb -> {
-                    ContenidoCargando(texto = "Buscando en la web...", modifier = Modifier.weight(1f))
-                }
-                is BusquedaUiState.Error -> {
-                    ContenidoError(
-                        mensaje = uiState.mensaje,
-                        sinConexion = uiState.sinConexion,
-                        modifier = Modifier.weight(1f),
-                        alReintentar = if (uiState.sePuedeReintentar) alReintentar else null
-                    )
-                }
-                is BusquedaUiState.VariosResultados -> {
-                    ContenidoVariosResultados(
-                        resultados = uiState.resultados,
-                        alSeleccionar = alSeleccionarComic,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                is BusquedaUiState.Encontrado -> {
-                    // No muestra nada: el LaunchedEffect ya se encarga de navegar al detalle
-                }
-            }
+            // imePadding: sube el aviso por encima del teclado, que sigue abierto después de buscar; si no, el teclado lo tapa.
+            SnackbarHost(
+                hostState = estadoSnackbar,
+                modifier = Modifier.align(Alignment.BottomCenter).imePadding()
+            )
         }
     }
 }

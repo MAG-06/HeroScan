@@ -108,6 +108,15 @@ private fun ContenidoDetalle(
                         alReintentar = alReintentar
                     )
                 }
+                // Sin alReintentar: el cómic no existe y repetir la carga daría el mismo 404
+                is DetalleUiState.NoEncontrado -> {
+                    ContenidoError(
+                        mensaje = "Este cómic no existe en Metron. Puede que el enlace esté mal.",
+                        sinConexion = false,
+                        modifier = Modifier.weight(1f),
+                        alReintentar = null
+                    )
+                }
                 is DetalleUiState.Listo -> {
                     val comic = uiState.comic
 
@@ -466,5 +475,14 @@ private fun PreviewDetalleError() {
 private fun PreviewDetalleErrorSinConexion() {
     TemaHeroScan {
         ContenidoDetalle(uiState = DetalleUiState.Error("No hay conexión o el servidor tardó demasiado. Intenta de nuevo.", sinConexion = true))
+    }
+}
+
+// Frame "Detalle · No encontrado": Metron respondió 404 (por ejemplo, un enlace con un id que no existe), sin REINTENTAR.
+@Preview(name = "Detalle · No encontrado", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewDetalleNoEncontrado() {
+    TemaHeroScan {
+        ContenidoDetalle(uiState = DetalleUiState.NoEncontrado)
     }
 }

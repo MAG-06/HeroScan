@@ -1,9 +1,10 @@
 package com.example.heroscan.ui.scan
 
+import android.app.Application
 import androidx.camera.core.Camera
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.heroscan.model.TipoCodigo
 import com.example.heroscan.network.ClienteRetrofit
@@ -13,7 +14,10 @@ import com.example.heroscan.repository.MENSAJE_SIN_CONEXION_COMICS
 import com.example.heroscan.repository.ResultadoBusqueda
 import com.example.heroscan.util.BloqueoCodigo
 import com.example.heroscan.util.actualizarBloqueo
+import com.example.heroscan.util.avisarComicEncontrado
+import com.example.heroscan.util.avisarVariosComics
 import com.example.heroscan.util.clasificarCodigoEscaneado
+import com.example.heroscan.util.quitarAvisos
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -29,7 +33,8 @@ import kotlin.coroutines.cancellation.CancellationException
 
 // Controla la cámara (linterna), analiza cada frame con ML Kit para detectar códigos de barras
 // y, cuando detecta uno, busca el cómic en el repositorio.
-class EscaneoViewModel : ViewModel() {
+// Es AndroidViewModel: recibe la Application para avisar con una notificación si la búsqueda en la web termina con la app fuera de la vista.
+class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
 
     private val repositorio = ComicRepository(ClienteRetrofit.metronApi, ClienteRetrofit.traduccionApi, ClienteRetrofit.geminiApi, ClienteRetrofit.tavilyApi)
 
@@ -49,6 +54,16 @@ class EscaneoViewModel : ViewModel() {
     private var bloqueo = BloqueoCodigo(codigoBloqueado = null, cuadrosSinVerlo = 0)
 
     private var camara: Camera? = null
+
+    // true mientras la pantalla se ve. La pantalla lo cambia en ON_START y ON_STOP.
+    private var appVisible = true
+
+    // La pantalla avisa si se ve o no (ON_START / ON_STOP).
+    // Al volver a verse quita los avisos que quedaron (por ejemplo, "varios" si el usuario volvió con el ícono).
+    fun cambiarVisibilidad(visible: Boolean) {
+        appVisible = visible
+        if (visible) quitarAvisos(app)
+    }
 
     // Lector de ML Kit configurado solo para los formatos que usan los cómics (EAN-13 y UPC-A)
     private val lectorCodigos: BarcodeScanner = BarcodeScanning.getClient(
@@ -152,8 +167,10 @@ class EscaneoViewModel : ViewModel() {
         _uiState.value = EscaneoUiState.BuscandoEnLaWeb
 
         viewModelScope.launch {
+            var tituloIa = ""
             _uiState.value = try {
                 val resultadoWeb = repositorio.buscarCodigoEnLaWeb(codigo)
+                tituloIa = resultadoWeb.titulo
                 when (val resultado = resultadoWeb.resultado) {
                     is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosPorTitulo(resultadoWeb.titulo)
@@ -166,6 +183,18 @@ class EscaneoViewModel : ViewModel() {
             } catch (e: Exception) {
                 EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
+            avisarSiNoSeVe(tituloIa)
+        }
+    }
+
+    // Si la búsqueda en la web terminó con la app fuera de la vista, avisa con una notificación (uno o varios). Los errores no avisan.
+    private fun avisarSiNoSeVe(tituloIa: String) {
+        if (appVisible) return
+        val estado = _uiState.value
+        when (estado) {
+            is EscaneoUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloIa)
+            is EscaneoUiState.VariosPorTitulo -> avisarVariosComics(app)
+            else -> {}
         }
     }
 
@@ -176,6 +205,7 @@ class EscaneoViewModel : ViewModel() {
         _codigoDetectado.value = null
         _tipoCodigoDetectado.value = null
         _uiState.value = EscaneoUiState.Escaneando
+        quitarAvisos(app)
     }
 
     // Se llama desde el botón REINTENTAR después de un error: vuelve a escanear y permite leer

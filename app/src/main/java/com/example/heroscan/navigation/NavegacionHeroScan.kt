@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.example.heroscan.ui.acceso.PantallaAcceso
 import com.example.heroscan.ui.detail.PantallaDetalleComic
 import com.example.heroscan.ui.home.PantallaInicio
@@ -116,7 +117,15 @@ fun NavegacionHeroScan(
             )
         }
 
-        composable<RutaDetalle> {
+        // Enlace profundo heroscan://detalle/{idComic}/{tipoCodigo} (lo abre el aviso "Encontramos tu cómic").
+        // Solo se registra si hay sesión (la app empieza en Inicio); sin sesión el enlace se ignora y se abre Acceso.
+        // Navigation arma la pila [Inicio, Detalle], así que "atrás" desde el detalle vuelve a Inicio.
+        val enlacesDetalle = if (rutaInicial == RutaInicio) {
+            listOf(navDeepLink<RutaDetalle>(basePath = "heroscan://detalle"))
+        } else {
+            emptyList()
+        }
+        composable<RutaDetalle>(deepLinks = enlacesDetalle) {
             PantallaDetalleComic(
                 alVolver = { controladorNavegacion.popBackStack() }
             )

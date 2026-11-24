@@ -7,6 +7,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,12 +25,16 @@ import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -53,12 +58,13 @@ import com.example.heroscan.ui.components.BarraSuperior
 import com.example.heroscan.ui.components.BotonCircular
 import com.example.heroscan.ui.components.PanelInferior
 import com.example.heroscan.ui.components.Visor
+import com.example.heroscan.ui.components.rememberPedirPermisoNotificaciones
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
 // Pantalla de escaneo: muestra la cámara en vivo (CameraX), el estado de la búsqueda
 // y navega cuando el ViewModel encuentra el cómic.
-// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoEscaneo (con la cámara como parámetro), que solo dibuja.
+// Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoEscaneo (con la cámara como parámetro), que solo dibuja. También pide el permiso de notificaciones cuando empieza una búsqueda lenta.
 @Composable
 fun PantallaEscaneo(
     alVolver: () -> Unit = {},
@@ -72,11 +78,16 @@ fun PantallaEscaneo(
     val tipoCodigoDetectado by escaneoViewModel.tipoCodigoDetectado.collectAsStateWithLifecycle()
     val linternaEncendida by escaneoViewModel.linternaEncendida.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val estadoSnackbar = remember { SnackbarHostState() }
+    // Pide el permiso de notificaciones (o avisa con un Snackbar) cuando empieza la búsqueda en la web de un ISBN-13.
+    val pedirPermisoNotificaciones = rememberPedirPermisoNotificaciones(estadoSnackbar)
 
     // Cuando el ViewModel termina de buscar: vibra, navega y deja la cámara lista para otro escaneo
     LaunchedEffect(uiState) {
         // "val estado" guarda una copia fija de uiState para que Kotlin deje leer sus datos después del "is" (como en la guía Consumo API parte 1).
         when (val estado = uiState) {
+            is EscaneoUiState.BuscandoEnLaWeb -> pedirPermisoNotificaciones()
+
             is EscaneoUiState.Encontrado -> {
                 vibrarDispositivo(context)
                 alEncontrarComic(estado.idComic, estado.tipoCodigo)
@@ -100,8 +111,15 @@ fun PantallaEscaneo(
     }
 
     // Si la pantalla deja de verse (app al fondo, otra pantalla o girar), la cámara se cierra y apaga la linterna: el botón también vuelve a apagado.
+    // También le avisa al ViewModel que la pantalla ya no se ve, para que avise con una notificación si la búsqueda termina así.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         escaneoViewModel.apagarLinterna()
+        escaneoViewModel.cambiarVisibilidad(false)
+    }
+
+    // La pantalla volvió a verse: ya no hace falta avisar con notificaciones.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        escaneoViewModel.cambiarVisibilidad(true)
     }
 
     ContenidoEscaneo(
@@ -110,6 +128,7 @@ fun PantallaEscaneo(
         tipoDetectado = tipoCodigoDetectado?.etiqueta,
         linternaEncendida = linternaEncendida,
         areaCamara = { modificador -> AreaCamara(viewModel = escaneoViewModel, modifier = modificador) },
+        estadoSnackbar = estadoSnackbar,
         alVolver = alVolver,
         alPulsarLinterna = escaneoViewModel::alternarLinterna,
         alReintentar = escaneoViewModel::reintentar
@@ -124,6 +143,7 @@ private fun ContenidoEscaneo(
     tipoDetectado: String?,
     linternaEncendida: Boolean,
     areaCamara: @Composable (Modifier) -> Unit,
+    estadoSnackbar: SnackbarHostState = remember { SnackbarHostState() },
     alVolver: () -> Unit = {},
     alPulsarLinterna: () -> Unit = {},
     alReintentar: () -> Unit = {}
@@ -132,81 +152,89 @@ private fun ContenidoEscaneo(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        // verticalScroll + heightIn(min = 540.dp): con el teléfono girado la columna mide al menos 540 dp y se baja con scroll hasta el panel inferior; en vertical se ve igual que antes.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .heightIn(min = 540.dp)
-        ) {
+        // Box: deja poner el aviso (Snackbar) abajo, encima de la columna, como en Portada.
+        Box(modifier = Modifier.fillMaxSize()) {
+            // verticalScroll + heightIn(min = 540.dp): con el teléfono girado la columna mide al menos 540 dp y se baja con scroll hasta el panel inferior; en vertical se ve igual que antes.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = 540.dp)
+            ) {
 
-            BarraSuperior(
-                titulo = "ESCANEAR CÓMIC",
-                alVolver = alVolver,
-                iconoDerecho = Icons.Filled.QrCodeScanner,
-                colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
-                fondoIconoDerecho = MaterialTheme.colorScheme.primary
-            )
+                BarraSuperior(
+                    titulo = "ESCANEAR CÓMIC",
+                    alVolver = alVolver,
+                    iconoDerecho = Icons.Filled.QrCodeScanner,
+                    colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,
+                    fondoIconoDerecho = MaterialTheme.colorScheme.primary
+                )
 
-            areaCamara(Modifier.weight(1f))
+                areaCamara(Modifier.weight(1f))
 
-            when (uiState) {
-                is EscaneoUiState.Buscando, is EscaneoUiState.BuscandoEnLaWeb -> {
-                    PanelInferior {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (uiState is EscaneoUiState.BuscandoEnLaWeb) "Buscando en la web..." else "Buscando cómic...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                }
-
-                is EscaneoUiState.Error -> {
-                    PanelInferior {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (uiState.sinConexion) "Problema de conexión" else "No se encontró el cómic",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = uiState.mensaje,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.titleSmall,
-                            // liveRegion (como en la guía LLM): TalkBack lee el mensaje de error apenas aparece, sin que el usuario lo busque.
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
-                        TextButton(onClick = alReintentar) {
-                            Text(
-                                text = "REINTENTAR",
+                when (uiState) {
+                    is EscaneoUiState.Buscando, is EscaneoUiState.BuscandoEnLaWeb -> {
+                        PanelInferior {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CircularProgressIndicator(
                                 color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (uiState is EscaneoUiState.BuscandoEnLaWeb) "Buscando en la web..." else "Buscando cómic...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    is EscaneoUiState.Error -> {
+                        PanelInferior {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (uiState.sinConexion) "Problema de conexión" else "No se encontró el cómic",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = uiState.mensaje,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.titleSmall,
+                                // liveRegion (como en la guía LLM): TalkBack lee el mensaje de error apenas aparece, sin que el usuario lo busque.
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            // TextButton (como en la guía MercadoLocal): el texto se ve igual, pero el área para tocarlo es de 48 dp.
+                            TextButton(onClick = alReintentar) {
+                                Text(
+                                    text = "REINTENTAR",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    else -> {
+                        ContenidoInferiorEscaneo(
+                            codigoDetectado = codigoDetectado,
+                            tipoDetectado = tipoDetectado,
+                            linternaEncendida = linternaEncendida,
+                            alPulsarLinterna = alPulsarLinterna
+                        )
                     }
                 }
-                else -> {
-                    ContenidoInferiorEscaneo(
-                        codigoDetectado = codigoDetectado,
-                        tipoDetectado = tipoDetectado,
-                        linternaEncendida = linternaEncendida,
-                        alPulsarLinterna = alPulsarLinterna
-                    )
-                }
             }
+
+            SnackbarHost(
+                hostState = estadoSnackbar,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
