@@ -63,7 +63,7 @@ import com.example.heroscan.ui.components.ContenidoError
 import com.example.heroscan.ui.theme.TemaHeroScan
 import com.example.heroscan.util.vibrarDispositivo
 
-// Pantalla de búsqueda por código, titulo o personaje escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
+// Pantalla de búsqueda por código, título o personaje escrito: muestra carga, error o resultados, y vibra cuando encuentra el cómic.
 // Crea (o recibe) el ViewModel, vibra y navega al encontrar, y le pasa todo a ContenidoBusqueda, que solo dibuja.
 @Composable
 fun PantallaBusqueda(
@@ -176,7 +176,7 @@ private fun ContenidoBusqueda(
                         mensaje = uiState.mensaje,
                         sinConexion = uiState.sinConexion,
                         modifier = Modifier.weight(1f),
-                        alReintentar = alReintentar
+                        alReintentar = if (uiState.sePuedeReintentar) alReintentar else null
                     )
                 }
                 is BusquedaUiState.VariosResultados -> {

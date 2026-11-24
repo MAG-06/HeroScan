@@ -5,10 +5,10 @@ import com.example.heroscan.model.TipoCodigo
 // Estados posibles de la pantalla de búsqueda por portada.
 sealed interface PortadaUiState {
     // Todavía no se envió ninguna imagen (o ya se terminó de procesar la anterior)
-    object Inicial : PortadaUiState
+    data object Inicial : PortadaUiState
 
     // Se envió la portada y se está esperando a la IA y a Metron
-    object Buscando : PortadaUiState
+    data object Buscando : PortadaUiState
 
     // Un solo cómic: su id y tipo de código, para abrir el detalle.
     data class Encontrado(val idComic: Int, val tipoCodigo: TipoCodigo) : PortadaUiState
