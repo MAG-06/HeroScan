@@ -23,6 +23,7 @@ import com.example.heroscan.network.mapper.aComic
 import com.example.heroscan.network.mapper.aComicResumen
 import com.example.heroscan.util.armarTextoParaIA
 import com.example.heroscan.util.limpiarCodigo
+import com.example.heroscan.util.quitarCercas
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import retrofit2.HttpException
@@ -38,23 +39,24 @@ sealed interface ResultadoBusqueda {
 // Se guarda el título porque, si hay varios resultados, la pantalla de búsqueda se abre con ese título.
 data class ResultadoPortada(val titulo: String, val resultado: ResultadoBusqueda)
 
-// Instrucciones que se le mandan a Gemini junto con la imagen de la portada.
+// Instrucciones de sistema para reconocer una portada (van en systemInstruction; la imagen va aparte).
 // Es una constante de este archivo (como un "private static final" de Java): no cambia nunca.
 private const val INSTRUCCIONES_PORTADA =
     "Identifica el cómic de esta portada. " +
         "titulo: nombre de la serie tal como se publicó originalmente en inglés (edición de EE. UU.), sin número ni año. " +
         "numero: solo el número de la edición (por ejemplo \"1\"); vacío si no se ve. " +
-        "editorial: la editorial de la edición de la portada. " +
-        "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los tres campos vacíos."
+        "Si la imagen no es una portada de cómic o no lo reconoces, devuelve los dos campos vacíos."
 
-// Instrucciones que se le mandan a Gemini junto con los resultados de buscar el ISBN en la web.
+// Instrucciones de sistema para leer los resultados de la búsqueda web del ISBN (van en systemInstruction; los resultados van aparte).
 private const val INSTRUCCIONES_CODIGO_WEB =
     "Estos son resultados de buscar en la web el código de barras (ISBN) de un cómic. Pueden estar en español u otro idioma. " +
         "Algunas páginas pueden mezclar el cómic con otro libro que tiene el mismo código: usa solo la información del cómic. " +
         "titulo: nombre ORIGINAL en inglés de la serie o novela gráfica, tal como se publicó en EE. UU., sin número ni año. " +
         "numero: solo el número de la edición original si el libro es un único número; vacío si es un tomo que reúne varios números o si no se sabe. " +
-        "editorial: la editorial de la edición original en inglés; vacío si no se sabe. " +
-        "Si los resultados no hablan de un cómic o no lo reconoces, devuelve los tres campos vacíos."
+        "Si los resultados no hablan de un cómic o no lo reconoces, devuelve los dos campos vacíos."
+
+// Tope de tokens de la respuesta de Gemini (el valor que usa la guía LLM para JSON).
+private const val MAX_TOKENS_GEMINI = 2048
 
 // Mensaje cuando un error no trae texto propio. Lo usan los ViewModels de escaneo, búsqueda, portada y detalle.
 const val MENSAJE_ERROR_DESCONOCIDO = "Error desconocido"
@@ -324,32 +326,33 @@ class ComicRepository(
         return ResultadoPortada(titulo, resultadoConTipo)
     }
 
-    // Manda la portada a Gemini y devuelve el título, número y editorial que reconoció.
+    // Manda la portada a Gemini y devuelve el título y el número que reconoció.
     private suspend fun identificarPortada(imagenBase64: String): DatosPortadaGemini {
         return pedirDatosAGemini(
+            instrucciones = INSTRUCCIONES_PORTADA,
             partes = listOf(
-                ParteGemini(text = INSTRUCCIONES_PORTADA),
                 ParteGemini(inlineData = DatosEnLineaGemini(mimeType = "image/jpeg", data = imagenBase64))
             ),
             mensajeIlegible = "La IA no pudo leer la portada"
         )
     }
 
-    // Manda a Gemini los resultados de la búsqueda web, entre <resultados> y </resultados> para separarlos de las instrucciones, y devuelve el título original, número y editorial que reconoció.
+    // Manda a Gemini los resultados de la búsqueda web, entre <resultados> y </resultados> y aparte de las instrucciones, y devuelve el título original y el número que reconoció.
     private suspend fun identificarDesdeTexto(textoResultados: String): DatosPortadaGemini {
         return pedirDatosAGemini(
+            instrucciones = INSTRUCCIONES_CODIGO_WEB,
             partes = listOf(
-                ParteGemini(text = INSTRUCCIONES_CODIGO_WEB),
                 ParteGemini(text = "<resultados>\n$textoResultados\n</resultados>")
             ),
             mensajeIlegible = "La IA no pudo identificar el cómic"
         )
     }
 
-    // Manda a Gemini las partes indicadas pidiendo un JSON con titulo, numero y editorial, y lo lee con Gson.
+    // Manda a Gemini las instrucciones (como systemInstruction) y las partes indicadas, pidiendo un JSON con titulo y numero, y lo lee con Gson.
     // Si la respuesta no se puede leer, lanza mensajeIlegible (cada búsqueda tiene el suyo).
-    private suspend fun pedirDatosAGemini(partes: List<ParteGemini>, mensajeIlegible: String): DatosPortadaGemini {
+    private suspend fun pedirDatosAGemini(instrucciones: String, partes: List<ParteGemini>, mensajeIlegible: String): DatosPortadaGemini {
         val peticion = PeticionGemini(
+            systemInstruction = ContenidoGemini(parts = listOf(ParteGemini(text = instrucciones))),
             contents = listOf(
                 ContenidoGemini(parts = partes)
             ),
@@ -359,11 +362,11 @@ class ComicRepository(
                     type = "OBJECT",
                     properties = mapOf(
                         "titulo" to EsquemaGemini(type = "STRING"),
-                        "numero" to EsquemaGemini(type = "STRING"),
-                        "editorial" to EsquemaGemini(type = "STRING")
+                        "numero" to EsquemaGemini(type = "STRING")
                     ),
-                    required = listOf("titulo", "numero", "editorial")
-                )
+                    required = listOf("titulo", "numero")
+                ),
+                maxOutputTokens = MAX_TOKENS_GEMINI
             )
         )
 
@@ -377,9 +380,9 @@ class ComicRepository(
         val texto = respuesta.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
             ?: throw Exception(mensajeIlegible)
 
-        // Segunda lectura: el texto es un JSON con titulo, numero y editorial
+        // Segunda lectura: el texto es un JSON con titulo y numero (antes se le quita la cerca de código, si la trae)
         val datos = try {
-            gson.fromJson(texto, DatosPortadaGemini::class.java)
+            gson.fromJson(quitarCercas(texto), DatosPortadaGemini::class.java)
         } catch (e: JsonSyntaxException) {
             null
         }

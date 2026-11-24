@@ -73,7 +73,7 @@ com.example.heroscan
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
 ├── repository/   ComicRepository, CuentaRepository y ComicNoEncontradoException
-├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código), Avisos (canal y notificaciones), EstadoPermiso (estados del permiso de notificaciones), AlmacenPermisos (si ya se pidió el permiso) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
+├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, limpieza de la respuesta de la IA (RespuestaIa), vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código), Avisos (canal y notificaciones), EstadoPermiso (estados del permiso de notificaciones), AlmacenPermisos (si ya se pidió el permiso) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -141,8 +141,10 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-137 pruebas JUnit 4 en `app/src/test` (136 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
+144 pruebas JUnit 4 en `app/src/test` (143 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
 Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
+
+La app limpia la respuesta de la IA cuando viene envuelta en cercas de código (` ```json … ``` `) antes de leer el JSON: lo hace `quitarCercas` en `util/RespuestaIa.kt`, que tiene su propia tabla de 7 pruebas.
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
 ```
@@ -178,6 +180,7 @@ Medidas aplicadas siguiendo las guías de clase "Autenticación y seguridad con 
 - **Sin permisos de galería:** la foto de la portada se elige con el selector del sistema, que no necesita permisos de almacenamiento.
 - **Sin secretos en los logs:** la app no imprime tokens, claves, correos ni contraseñas.
 - **Resultados de la web separados de las instrucciones:** los resultados de la búsqueda web se le mandan a Gemini entre `<resultados>` y `</resultados>` y sin los `<` y `>` de las páginas, para que no se mezclen con las instrucciones (protección básica contra la inyección de prompt). Igual, lo que diga la IA siempre lo confirma Metron.
+- **Instrucciones de sistema:** las instrucciones a Gemini van en `systemInstruction`, separadas de los datos (la imagen o los resultados de la web).
 - **Aviso de la IA en Portada:** debajo de "SUBE LA IMAGEN" se avisa que la IA puede equivocarse y que no se suban fotos con datos personales, porque en la capa gratuita de Gemini Google puede usar lo que se envía.
 - **Avisos seguros:** el intent del aviso usa `FLAG_IMMUTABLE` (otra app no puede cambiarlo) y el aviso no muestra datos de la cuenta, solo el título del cómic.
 

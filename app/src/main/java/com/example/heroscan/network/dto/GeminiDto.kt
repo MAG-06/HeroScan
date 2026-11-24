@@ -6,8 +6,10 @@ package com.example.heroscan.network.dto
 
 // === PETICIÓN ===
 
-// Petición completa: el contenido a analizar (texto y, si hay, una imagen) y la configuración de la respuesta.
+// Petición completa: las instrucciones de sistema, el contenido a analizar (texto o una imagen) y la configuración de la respuesta.
 data class PeticionGemini(
+    // Instrucciones de sistema: van aparte del contenido para que el modelo no las mezcle con los datos.
+    val systemInstruction: ContenidoGemini,
     val contents: List<ContenidoGemini>,
     val generationConfig: ConfiguracionGemini
 )
@@ -29,10 +31,12 @@ data class DatosEnLineaGemini(
     val data: String
 )
 
-// Pide que la respuesta sea JSON y que siga el esquema indicado.
+// Pide que la respuesta sea JSON, que siga el esquema indicado y que no pase de maxOutputTokens.
 data class ConfiguracionGemini(
     val responseMimeType: String,
-    val responseSchema: EsquemaGemini
+    val responseSchema: EsquemaGemini,
+    // Tope de tokens de la respuesta (en los modelos que razonan, el razonamiento también cuenta).
+    val maxOutputTokens: Int
 )
 
 // Describe la forma del JSON esperado: tipo ("OBJECT", "STRING"...), sus propiedades y cuáles son obligatorias.
@@ -54,10 +58,9 @@ data class CandidatoGemini(
     val content: ContenidoGemini?
 )
 
-// Datos que devuelve Gemini en su JSON (titulo, numero, editorial). Lo usan buscar por portada y buscar un ISBN-13 en la web.
+// Datos que devuelve Gemini en su JSON (titulo, numero). Lo usan buscar por portada y buscar un ISBN-13 en la web.
 // Los campos son String? porque Gson deja en null lo que no llega.
 data class DatosPortadaGemini(
     val titulo: String?,
-    val numero: String?,
-    val editorial: String?
+    val numero: String?
 )
