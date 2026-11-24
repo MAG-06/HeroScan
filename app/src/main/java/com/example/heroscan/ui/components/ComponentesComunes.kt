@@ -110,21 +110,26 @@ fun LogoHeroScan() {
     }
 }
 
-// Botón cuadrado con la flecha de "volver". Solo lo usa la barra superior.
+// Botón cuadrado con la flecha de "volver": se ve de 40 dp, pero el área para tocarlo es de 48 dp (mínimo de la guía de Diseño). Solo lo usa la barra superior.
 @Composable
 private fun BotonVolver(alPulsar: () -> Unit) {
     IconButton(
         onClick = alPulsar,
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
+        modifier = Modifier.size(48.dp)
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Volver",
-            tint = MaterialTheme.colorScheme.onSurface
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -140,7 +145,8 @@ fun BarraSuperior(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            // Padding 12 / 4 porque los dos lados miden 48 dp para el toque: así los cuadrados de 40 dp quedan a 16 dp del borde y la barra sigue midiendo 56 dp.
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -154,19 +160,25 @@ fun BarraSuperior(
             letterSpacing = 1.sp
         )
 
+        // Mismo ancho que BotonVolver (48 dp) para que el título quede centrado.
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(fondoIconoDerecho),
+            modifier = Modifier.size(48.dp),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = iconoDerecho,
-                contentDescription = null,
-                tint = colorIconoDerecho,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(fondoIconoDerecho),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = iconoDerecho,
+                    contentDescription = null,
+                    tint = colorIconoDerecho,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -522,7 +534,7 @@ fun ContenidoCargando(texto: String, modifier: Modifier = Modifier) {
     }
 }
 
-// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Búsqueda y Detalle lo pasan); si no, no lo muestra.
+// Mensaje de error de Búsqueda y Detalle. Si falló por falta de internet (sinConexion), el título dice "Problema de conexión". Si recibe alReintentar, muestra el botón REINTENTAR (Detalle siempre lo pasa; Búsqueda, solo si repetir la búsqueda sirve); si no, no lo muestra.
 @Composable
 fun ContenidoError(
     mensaje: String,

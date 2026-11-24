@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Smartphone
@@ -168,10 +171,16 @@ private fun ContenidoPortada(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            // verticalScroll + heightIn(min = 680.dp): con el teléfono girado la columna mide al menos 680 dp y se baja con scroll hasta ENVIAR y GALERÍA; en vertical se ve igual que antes.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = 680.dp)
+            ) {
 
                 BarraSuperior(
-                    titulo = "ESCANEAR COMIC",
+                    titulo = "ESCANEAR CÓMIC",
                     alVolver = alVolver,
                     iconoDerecho = Icons.Filled.QrCodeScanner,
                     colorIconoDerecho = MaterialTheme.colorScheme.onPrimary,

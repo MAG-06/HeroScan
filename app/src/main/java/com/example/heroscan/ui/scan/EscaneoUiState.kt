@@ -5,13 +5,13 @@ import com.example.heroscan.model.TipoCodigo
 // Estados posibles de la pantalla de escaneo.
 sealed interface EscaneoUiState {
     // La cámara está buscando un código de barras
-    object Escaneando : EscaneoUiState
+    data object Escaneando : EscaneoUiState
 
     // Se detectó un código y se está consultando la API
-    object Buscando : EscaneoUiState
+    data object Buscando : EscaneoUiState
 
     // Se detectó un ISBN-13 y se está buscando en la web
-    object BuscandoEnLaWeb : EscaneoUiState
+    data object BuscandoEnLaWeb : EscaneoUiState
 
     // Un solo cómic: su id y tipo de código, para abrir el detalle.
     data class Encontrado(val idComic: Int, val tipoCodigo: TipoCodigo) : EscaneoUiState

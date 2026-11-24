@@ -127,9 +127,9 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
 
         val tipoCodigo = clasificarCodigoEscrito(_textoBusqueda.value)
 
-        // Si el código no tiene una longitud válida, se avisa al usuario en vez de no hacer nada
+        // Si el código no tiene una longitud válida, se avisa al usuario (sin REINTENTAR: el código seguiría siendo el mismo)
         if (tipoCodigo == TipoCodigo.DESCONOCIDO) {
-            _uiState.value = BusquedaUiState.Error("Código no válido: debe tener 12, 13 o 17 dígitos")
+            _uiState.value = BusquedaUiState.Error("Código no válido: debe tener 10, 12, 13 o 17 dígitos", sePuedeReintentar = false)
             return
         }
 
@@ -154,7 +154,8 @@ class BusquedaViewModel(private val estadoGuardado: SavedStateHandle) : ViewMode
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
+                // Los ISBN-10 todavía no se soportan: reintentar daría el mismo error, así que no se ofrece.
+                BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO, sePuedeReintentar = tipoCodigo != TipoCodigo.ISBN_10)
             }
         }
     }
