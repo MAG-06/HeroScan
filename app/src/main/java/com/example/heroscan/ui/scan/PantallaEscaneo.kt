@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -129,7 +132,13 @@ private fun ContenidoEscaneo(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        // verticalScroll + heightIn(min = 540.dp): con el teléfono girado la columna mide al menos 540 dp y se baja con scroll hasta el panel inferior; en vertical se ve igual que antes.
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = 540.dp)
+        ) {
 
             BarraSuperior(
                 titulo = "ESCANEAR CÓMIC",
@@ -266,7 +275,7 @@ private fun iniciarCamara(
     }, ContextCompat.getMainExecutor(context))
 }
 
-// Panel inferior: muestra instrucciones o el código detectado, y el botón de la linterna.
+// Panel inferior: muestra las instrucciones mientras no hay código detectado, y el botón de la linterna.
 @Composable
 private fun ContenidoInferiorEscaneo(
     codigoDetectado: String?,
@@ -295,11 +304,6 @@ private fun ContenidoInferiorEscaneo(
                 lineHeight = 18.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
-        } else {
-            /*SeccionCodigoDetectado(
-                codigo = codigoDetectado,
-                tipo = tipoDetectado ?: "Desconocido"
-            )*/
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -407,7 +411,3 @@ private fun PreviewEscaneoErrorSinConexion() {
         )
     }
 }
-
-
-
-
