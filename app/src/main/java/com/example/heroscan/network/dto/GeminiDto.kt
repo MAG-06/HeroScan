@@ -58,9 +58,10 @@ data class CandidatoGemini(
     val content: ContenidoGemini?
 )
 
-// Datos que devuelve Gemini en su JSON (titulo, numero). Lo usan buscar por portada y buscar un ISBN-13 en la web.
+// Datos que devuelve Gemini en su JSON (titulo, numero, serie). Lo usan buscar por portada y buscar un ISBN-13 en la web.
 // Los campos son String? porque Gson deja en null lo que no llega.
 data class DatosPortadaGemini(
     val titulo: String?,
-    val numero: String?
+    val numero: String?,
+    val serie: String?
 )
