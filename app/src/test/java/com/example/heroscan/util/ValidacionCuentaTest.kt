@@ -1,10 +1,12 @@
 package com.example.heroscan.util
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
+// Pruebas normales de normalizarNombreUsuario, validarClave y el mensaje de error de validarNombreUsuario.
 // validarCorreo no se prueba aquí porque usa android.util.Patterns, que no funciona en las pruebas locales.
 class ValidacionCuentaTest {
 
@@ -29,66 +31,6 @@ class ValidacionCuentaTest {
         )
     }
 
-    // Comprueba el límite inferior: 3 caracteres son válidos.
-    @Test
-    fun nombreDeTresCaracteresEsValido() {
-        assertNull(validarNombreUsuario("abc"))
-    }
-
-    // Comprueba el límite superior: 20 caracteres son válidos.
-    @Test
-    fun nombreDeVeinteCaracteresEsValido() {
-        assertNull(validarNombreUsuario("a".repeat(20)))
-    }
-
-    // Comprueba el límite superior: 21 caracteres no sirven.
-    @Test
-    fun nombreDeVeintiunCaracteresDaError() {
-        assertNotNull(validarNombreUsuario("a".repeat(21)))
-    }
-
-    // Comprueba que se aceptan letras, números, guion bajo y punto.
-    @Test
-    fun nombreConCaracteresPermitidosEsValido() {
-        assertNull(validarNombreUsuario("ana_perez.99"))
-    }
-
-    // Comprueba que un espacio interno no se acepta.
-    @Test
-    fun nombreConEspacioDaError() {
-        assertNotNull(validarNombreUsuario("ana perez"))
-    }
-
-    // Comprueba que una tilde no se acepta.
-    @Test
-    fun nombreConTildeDaError() {
-        assertNotNull(validarNombreUsuario("josé"))
-    }
-
-    // Comprueba que la ñ no se acepta.
-    @Test
-    fun nombreConEnieDaError() {
-        assertNotNull(validarNombreUsuario("muñoz"))
-    }
-
-    // Comprueba que una mayúscula sin normalizar no se acepta.
-    @Test
-    fun nombreConMayusculaDaError() {
-        assertNotNull(validarNombreUsuario("Ana"))
-    }
-
-    // Comprueba que un guion no se acepta.
-    @Test
-    fun nombreConGuionDaError() {
-        assertNotNull(validarNombreUsuario("ana-perez"))
-    }
-
-    // Comprueba que un nombre vacío no se acepta.
-    @Test
-    fun nombreVacioDaError() {
-        assertNotNull(validarNombreUsuario(""))
-    }
-
     // Comprueba que una contraseña de 7 caracteres no sirve y se devuelve el mensaje exacto.
     @Test
     fun claveDeSieteCaracteresDaError() {
@@ -99,5 +41,34 @@ class ValidacionCuentaTest {
     @Test
     fun claveDeOchoCaracteresEsValida() {
         assertNull(validarClave("abcdefgh"))
+    }
+}
+
+// Tabla de casos de validarNombreUsuario: cada fila es un nombre ya normalizado y si debe ser válido.
+@RunWith(Parameterized::class)
+class ValidarNombreUsuarioTest(private val caso: String, private val nombre: String, private val valido: Boolean) {
+
+    companion object {
+        // Filas: nombre del caso, nombre de usuario y si es válido.
+        @JvmStatic
+        @Parameterized.Parameters(name = "{index}: {0}")
+        fun casos(): List<Array<Any>> = listOf(
+            arrayOf("3 caracteres (límite inferior)", "abc", true),
+            arrayOf("20 caracteres (límite superior)", "a".repeat(20), true),
+            arrayOf("21 caracteres", "a".repeat(21), false),
+            arrayOf("letras, números, _ y .", "ana_perez.99", true),
+            arrayOf("espacio interno", "ana perez", false),
+            arrayOf("tilde", "josé", false),
+            arrayOf("ñ", "muñoz", false),
+            arrayOf("mayúscula sin normalizar", "Ana", false),
+            arrayOf("guion", "ana-perez", false),
+            arrayOf("vacío", "", false)
+        )
+    }
+
+    // Comprueba que cada nombre es válido o da error según su fila.
+    @Test
+    fun cadaNombreEsValidoODaErrorSegunSuFila() {
+        assertEquals(valido, validarNombreUsuario(nombre) == null)
     }
 }
