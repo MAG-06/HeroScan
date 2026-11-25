@@ -12,9 +12,9 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 
 - **Escanear con la cámara:** CameraX + Google ML Kit detectan códigos UPC-A y EAN-13 en tiempo real. Si el código corresponde a un solo cómic se abre su detalle; si corresponde a varios (por ejemplo, toda la serie), se muestra la lista para elegir. Incluye linterna. Si el código es un ISBN-13 (los tomos en español), la app lo busca en la web (ver "Buscar un ISBN en la web"). Al volver de un resultado, el mismo cómic no se abre solo otra vez; basta con apartarlo de la cámara un momento para volver a escanearlo.
 - **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro). El chip "O AGITA EL TELÉFONO" solo aparece si el teléfono tiene acelerómetro.
-- **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título y el número del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda por título.
-- **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés y el número. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
-- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (10, 12, 13 o 17 dígitos; los de 10 son ISBN-10, que todavía no se soportan). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web.
+- **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título, el número y la serie del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron probando en orden hasta 5 búsquedas (título con y sin número, serie con y sin número, y lo que va antes de los dos puntos del título) y se queda con la primera que trae algo: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda con el texto con el que lo encontró.
+- **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés, el número y la serie. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
+- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (10, 12, 13 o 17 dígitos; los de 10 son ISBN-10, que todavía no se soportan). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web. Al buscar por título, una `/` pegada se separa con espacios antes de buscar, porque Metron busca por palabras (`Superman/Batman` se busca como `Superman / Batman`).
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen. Si el cómic no existe en Metron (por ejemplo, un enlace con un id equivocado), muestra "No se encontró el cómic" sin REINTENTAR.
 - **Teléfono girado:** en Escanear y Buscar por portada se puede bajar con scroll hasta los botones.
 - Vibración al encontrar un cómic con el escáner y manejo de los permisos de cámara y de notificaciones (ver "Permisos").
@@ -60,6 +60,7 @@ UI (Compose) → ViewModel → Repository → Retrofit / API
 - `AccesoViewModel` es un `AndroidViewModel`: recibe la `Application` para usar `AlmacenIntentos`, que guarda con DataStore los fallos seguidos y la hora del bloqueo.
 - `EscaneoViewModel`, `PortadaViewModel` y `BusquedaViewModel` también son `AndroidViewModel`: reciben la `Application` para mostrar los avisos de las búsquedas lentas (`util/Avisos`). Cada una de esas pantallas le dice a su ViewModel si se ve o no (`LifecycleEventEffect` en `ON_START` / `ON_STOP`), y el ViewModel solo avisa si no se ve.
 - `obtenerDetalleComic` lanza `ComicNoEncontradoException` con el 404 de Metron, y `DetalleViewModel` la convierte en el estado `NoEncontrado`.
+- `procesarRespuesta` lanza `SinResultadosException` cuando Metron responde bien pero sin resultados; las búsquedas con IA la usan para pasar a la siguiente búsqueda (un 429, un 500 o la falta de conexión salen enseguida).
 - `NavegacionHeroScan` registra el enlace profundo del detalle solo si la app empezó en Inicio (con sesión).
 - `ComicRepository` recibe las APIs (Metron, MyMemory, Gemini y Tavily) por constructor y los ViewModels se las pasan. `ClienteRetrofit` tiene un Retrofit para cada una; los de Metron, Gemini y Tavily agregan su token o clave con un interceptor de OkHttp.
 - `CuentaRepository` usa Firebase Authentication y Firestore para crear la cuenta, iniciar y cerrar sesión y recuperar la contraseña.
@@ -72,8 +73,8 @@ com.example.heroscan
 ├── navigation/   NavHost, rutas y SesionViewModel
 ├── model/        modelos de la app (Comic, Personaje, ComicResumen, TipoCodigo, Usuario)
 ├── network/      Retrofit, APIs, DTOs y mapper
-├── repository/   ComicRepository, CuentaRepository y ComicNoEncontradoException
-├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, limpieza de la respuesta de la IA (RespuestaIa), vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código), Avisos (canal y notificaciones), EstadoPermiso (estados del permiso de notificaciones), AlmacenPermisos (si ya se pidió el permiso) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
+├── repository/   ComicRepository, CuentaRepository, ComicNoEncontradoException y SinResultadosException
+├── util/         clasificador de códigos de barras, texto de la búsqueda web para la IA, limpieza de la respuesta de la IA (RespuestaIa), TituloMetron (normalizar el título y armar las búsquedas para Metron), vibración, sensores, imágenes, BloqueoCodigo (cuándo el escáner puede volver a leer el mismo código), Avisos (canal y notificaciones), EstadoPermiso (estados del permiso de notificaciones), AlmacenPermisos (si ya se pidió el permiso) y, para las cuentas, ValidacionCuenta, EvaluadorClave, LimitadorIntentos y AlmacenIntentos
 └── ui/           pantallas (acceso, inicio, escaneo, portada, búsqueda, detalle, perfil), componentes comunes y tema
 ```
 
@@ -141,10 +142,12 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-144 pruebas JUnit 4 en `app/src/test` (143 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
+163 pruebas JUnit 4 en `app/src/test` (162 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, títulos para Metron (normalizar y búsquedas en orden), validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
 Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
 
 La app limpia la respuesta de la IA cuando viene envuelta en cercas de código (` ```json … ``` `) antes de leer el JSON: lo hace `quitarCercas` en `util/RespuestaIa.kt`, que tiene su propia tabla de 7 pruebas.
+
+Las búsquedas que se prueban en Metron con lo que da la IA las arma `candidatosBusqueda` en `util/TituloMetron.kt` (junto con `normalizarTitulo`), que tiene dos tablas: 7 y 12 pruebas.
 
 Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Tests**) o con:
 ```
@@ -158,13 +161,13 @@ gradlew.bat testDebugUnitTest
 - Los UPC-A y EAN-13 se buscan directo en Metron, y los ISBN-13 se buscan en la web. Los ISBN-10 todavía no se soportan, ni las grapas con EAN (ediciones en español) que Metron no tiene.
 - La búsqueda web usa el plan gratis de Tavily: 1.000 créditos al mes, y cada ISBN gasta uno (también al tocar REINTENTAR). Si se acaban, la app muestra "Se acabaron las búsquedas web gratis de este mes".
 - La búsqueda web solo busca en 8 tiendas y catálogos de cómics y libros de Colombia y España, más AbeBooks (internacional): MercadoLibre Colombia, Whakoom, Tebeosfera, Todocoleccion, AbeBooks, Iberlibro, Casa del Libro y Buscalibre Colombia (el mismo orden de la lista del código). Como la app no es pública, la lista se dejó fija con las páginas probadas. Un ISBN que no aparezca en esas páginas no se encuentra y la app muestra "No se encontró el cómic en la web". Para buscar en más páginas (por ejemplo, de otros países), agrega el dominio a la lista `DOMINIOS_BUSQUEDA_WEB` en `repository/ComicRepository.kt` (sin `https://` ni `www.`) y vuelve a compilar.
-- Si un ISBN escaneado da varios resultados, la lista se busca por título y el detalle muestra el tipo de código "Desconocido" (como en la búsqueda por portada). Si el ISBN se escribe en la búsqueda, el detalle muestra "ISBN-13".
+- Si un ISBN escaneado da varios resultados, la lista se busca con el texto con el que Metron lo encontró (sin número) y el detalle muestra el tipo de código "Desconocido" (como en la búsqueda por portada). Si el ISBN se escribe en la búsqueda, el detalle muestra "ISBN-13".
 - Un tomo en español que reúne varios números se busca por su serie original en inglés: la app muestra los números de esa serie, no el tomo.
-- Buscar por portada usa la capa gratuita de Gemini: tiene límites de uso y el servicio puede estar saturado a ratos. Si la portada da varios resultados, la lista se busca solo por título. Los cómics que no están en Metron (por ejemplo, tomos recopilatorios) no se encuentran.
+- Buscar por portada usa la capa gratuita de Gemini: tiene límites de uso y el servicio puede estar saturado a ratos. Si la portada da varios resultados, la lista se busca con el texto con el que Metron la encontró (sin número). Gemini no siempre da la serie, así que algunas portadas solo se encuentran a veces (por ejemplo, *The Power of Warlock* #7). Los cómics que no están en Metron (por ejemplo, tomos recopilatorios) no se encuentran.
 - Las listas muestran la primera página de resultados de Metron.
 - La búsqueda por personaje usa el primer personaje que coincide con el nombre.
 - Las descripciones de más de 500 caracteres se muestran en inglés (límite de MyMemory).
-- Metron (cuenta gratuita) acepta unas 20 peticiones por minuto y abrir un cómic cuesta varias (el cómic y la imagen de cada personaje). Si se abren muchos cómics seguidos, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
+- Metron (cuenta gratuita) acepta unas 20 peticiones por minuto. Abrir un cómic cuesta varias (el cómic y la imagen de cada personaje), y una búsqueda con IA (portada o ISBN en la web) puede gastar hasta 5 si las primeras no traen nada. Si se hacen muchas seguidas, la app muestra "Demasiadas búsquedas seguidas. Espera un minuto e intenta de nuevo."
 - El bloqueo por intentos fallidos usa la hora del teléfono: si se adelanta el reloj, termina antes (si se atrasa, la espera nunca pasa de 15 minutos). Borrar los datos de la app o reinstalarla también lo quita.
 - El escáner suelta el último código después de 15 cuadros seguidos sin verlo (cerca de 1 segundo). Si al volver de un resultado la cámara tarda en enfocar, el mismo cómic podría abrirse otra vez; se ajusta con `CUADROS_PARA_LIBERAR` en `util/BloqueoCodigo.kt`.
 - La búsqueda lenta no sigue si la app se cierra del todo (no se usa WorkManager): si Android la cierra o el usuario la quita de Recientes, la búsqueda se pierde y no llega el aviso.
