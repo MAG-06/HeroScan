@@ -143,7 +143,7 @@ Qué se guarda en Firestore:
 ## Pruebas unitarias
 
 163 pruebas JUnit 4 en `app/src/test` (162 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, títulos para Metron (normalizar y búsquedas en orden), validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
-Los mensajes de error se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por código HTTP). Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente).
+Las reglas con muchos casos se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por caso): los mensajes de error (una fila por código HTTP), el clasificador de códigos (escritos y escaneados), el nombre de usuario y el estado del permiso de notificaciones. Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente). Después, cada tabla nueva se comprobó igual: 8 mutaciones más, todas detectadas.
 
 La app limpia la respuesta de la IA cuando viene envuelta en cercas de código (` ```json … ``` `) antes de leer el JSON: lo hace `quitarCercas` en `util/RespuestaIa.kt`, que tiene su propia tabla de 7 pruebas.
 
