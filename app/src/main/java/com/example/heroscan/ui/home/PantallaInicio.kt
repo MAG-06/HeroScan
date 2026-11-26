@@ -316,9 +316,9 @@ private const val TIEMPO_ENTRE_SACUDIDAS = 1000L
 // minActiveState = RESUMED apaga el sensor si Inicio no está al frente (por ejemplo, con el diálogo del permiso abierto o al ir a Escaneo).
 @Composable
 private fun DetectorSacudida(alSacudir: () -> Unit) {
-    val context = LocalContext.current
+    val contexto = LocalContext.current
 
-    val lectura by remember { context.sensorFlow(Sensor.TYPE_ACCELEROMETER) }
+    val lectura by remember { contexto.sensorFlow(Sensor.TYPE_ACCELEROMETER) }
         .collectAsStateWithLifecycle(
             initialValue = floatArrayOf(0f, 0f, 0f),
             minActiveState = Lifecycle.State.RESUMED

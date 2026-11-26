@@ -62,7 +62,10 @@ class ValidarNombreUsuarioTest(private val caso: String, private val nombre: Str
             arrayOf("ñ", "muñoz", false),
             arrayOf("mayúscula sin normalizar", "Ana", false),
             arrayOf("guion", "ana-perez", false),
-            arrayOf("vacío", "", false)
+            arrayOf("vacío", "", false),
+            arrayOf("solo puntos", "...", false),
+            arrayOf("solo guiones bajos", "___", false),
+            arrayOf("letra y puntos", "a..", true)
         )
     }
 

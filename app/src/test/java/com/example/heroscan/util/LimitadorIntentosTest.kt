@@ -191,4 +191,12 @@ class LimitadorIntentosTest {
         limitador.restaurar(10, ahora + 60 * 60_000L)
         assertEquals(900, limitador.segundosDeEspera())
     }
+
+    // Comprueba que al restaurar un número de fallos negativo se toma como 0 y quedan los 5 intentos.
+    @Test
+    fun restaurarFallosNegativosQuedaEnCero() {
+        limitador.restaurar(-3, 0L)
+        assertEquals(0, limitador.fallosSeguidos)
+        assertEquals(5, limitador.intentosRestantesAntesDeBloqueo())
+    }
 }

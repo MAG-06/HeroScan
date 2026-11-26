@@ -51,7 +51,9 @@ class ClasificarCodigoEscritoTest(private val caso: String, private val entrada:
             arrayOf("14 caracteres", "59012341234570", TipoCodigo.DESCONOCIDO),
             arrayOf("16 caracteres", "1234567890120011", TipoCodigo.DESCONOCIDO),
             arrayOf("18 caracteres", "123456789012001110", TipoCodigo.DESCONOCIDO),
-            arrayOf("vacío", "", TipoCodigo.DESCONOCIDO)
+            arrayOf("vacío", "", TipoCodigo.DESCONOCIDO),
+            arrayOf("10 letras", "abcdefghij", TipoCodigo.DESCONOCIDO),
+            arrayOf("13 con una letra", "978030640615X", TipoCodigo.DESCONOCIDO)
         )
     }
 

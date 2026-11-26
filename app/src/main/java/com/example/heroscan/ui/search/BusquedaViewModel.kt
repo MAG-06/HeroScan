@@ -180,10 +180,10 @@ class BusquedaViewModel(private val app: Application, private val estadoGuardado
         _uiState.value = BusquedaUiState.CargandoEnLaWeb
 
         viewModelScope.launch {
-            var tituloIa = ""
+            var tituloEncontrado = ""
             _uiState.value = try {
                 val resultadoWeb = repositorio.buscarCodigoEnLaWeb(_textoBusqueda.value)
-                tituloIa = resultadoWeb.titulo
+                tituloEncontrado = resultadoWeb.titulo
                 when (val resultado = resultadoWeb.resultado) {
                     is ResultadoBusqueda.Unico -> BusquedaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> BusquedaUiState.VariosResultados(resultado.resultados)
@@ -196,16 +196,16 @@ class BusquedaViewModel(private val app: Application, private val estadoGuardado
             } catch (e: Exception) {
                 BusquedaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
-            avisarSiNoSeVe(tituloIa)
+            avisarSiNoSeVe(tituloEncontrado)
         }
     }
 
     // Si la búsqueda en la web terminó con la app fuera de la vista, avisa con una notificación (uno o varios). Los errores no avisan.
-    private fun avisarSiNoSeVe(tituloIa: String) {
+    private fun avisarSiNoSeVe(tituloEncontrado: String) {
         if (appVisible) return
         val estado = _uiState.value
         when (estado) {
-            is BusquedaUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloIa)
+            is BusquedaUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloEncontrado)
             is BusquedaUiState.VariosResultados -> avisarVariosComics(app)
             else -> {}
         }

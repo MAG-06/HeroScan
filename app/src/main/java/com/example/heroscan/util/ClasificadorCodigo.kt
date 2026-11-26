@@ -5,14 +5,16 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
 // Funciones para identificar qué tipo de código (UPC-A, EAN-13, ISBN) es un código de barras.
 
-// Quita espacios y guiones de un código para dejar solo sus dígitos.
+// Quita espacios y guiones de un código (no quita letras ni otros símbolos).
 fun limpiarCodigo(codigo: String): String {
     return codigo.trim().replace("-", "").replace(" ", "")
 }
 
-// Identifica el tipo de un código escrito a mano según su longitud y su prefijo.
+// Identifica el tipo de un código escrito a mano según su longitud y su prefijo. Si tiene algo que no sea un dígito, es DESCONOCIDO.
 fun clasificarCodigoEscrito(codigo: String): TipoCodigo {
     val codigoLimpio = limpiarCodigo(codigo)
+
+    if (!codigoLimpio.all { it.isDigit() }) return TipoCodigo.DESCONOCIDO
 
     return when {
         codigoLimpio.length == 13 &&
