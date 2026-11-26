@@ -2,7 +2,7 @@
 
 App Android para coleccionistas de cómics: escaneas el código de barras de un cómic físico con la cámara (o eliges una foto de su portada) y la app te muestra su información (título, número, editorial, fecha, portada, descripción, créditos y personajes).
 
-Proyecto universitario individual. Se construye por fases a lo largo del semestre, a medida que se ven nuevos temas en clase.
+Proyecto universitario individual. Se construyó por fases a lo largo del semestre, a medida que se veían nuevos temas en clase.
 
 **Autor:** Mateo Albornoz Gil
 
@@ -14,13 +14,13 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 - **Agitar para escanear:** en la pantalla de inicio, agitar el teléfono abre el escáner (acelerómetro). El chip "O AGITA EL TELÉFONO" solo aparece si el teléfono tiene acelerómetro.
 - **Buscar por portada:** eliges una imagen de la galería y la IA de Gemini identifica el título, el número y la serie del cómic (también en ediciones en español, buscando la edición original en inglés). Luego la app lo busca en Metron probando en orden hasta 5 búsquedas (título con y sin número, serie con y sin número, y lo que va antes de los dos puntos del título) y se queda con la primera que trae algo: si encuentra uno abre su detalle; si encuentra varios abre la búsqueda con el texto con el que lo encontró.
 - **Buscar un ISBN en la web:** si el código es un ISBN-13 (empieza por 978 o 979), escaneado o escrito en la búsqueda, el buscador web Tavily busca ese código y Gemini lee los resultados para dar el título original en inglés, el número y la serie. Luego la app lo busca en Metron, igual que con la portada. Mientras tanto se muestra "Buscando en la web...". Si encuentra un cómic abre su detalle; si encuentra varios muestra la lista.
-- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (10, 12, 13 o 17 dígitos; los de 10 son ISBN-10, que todavía no se soportan). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web. Al buscar por título, una `/` pegada se separa con espacios antes de buscar, porque Metron busca por palabras (`Superman/Batman` se busca como `Superman / Batman`).
+- **Buscar por texto:** filtros TODO, TÍTULO, PERSONAJE y CÓDIGO (10, 12, 13 o 17 dígitos; los de 10 son ISBN-10, que todavía no se soportan, y un código con letras da "Código no válido"). Un ISBN-13 escrito con CÓDIGO o TODO se busca en la web. Al buscar por título, una `/` pegada se separa con espacios antes de buscar, porque Metron busca por palabras (`Superman/Batman` se busca como `Superman / Batman`).
 - **Detalle del cómic:** portada, datos de la edición, descripción traducida al español, créditos y hasta 5 personajes con imagen. Si el cómic no existe en Metron (por ejemplo, un enlace con un id equivocado), muestra "No se encontró el cómic" sin REINTENTAR.
 - **Teléfono girado:** en Escanear y Buscar por portada se puede bajar con scroll hasta los botones.
 - Vibración al encontrar un cómic con el escáner y manejo de los permisos de cámara y de notificaciones (ver "Permisos").
 - **Mensajes de error en español:** si no hay internet o el servidor tarda demasiado, la app avisa que hay un problema de conexión; en el escáner, el detalle, la búsqueda y la búsqueda por portada se puede reintentar (no se ofrece REINTENTAR en la búsqueda si el código no es válido o es un ISBN-10, ni en el detalle si el cómic no existe, porque daría el mismo error).
 - **Accesibilidad:** los chips de filtro, los botones de texto (como REINTENTAR) y el botón Volver tienen un área para tocar de 48 dp; los íconos que hacen algo (Volver, Limpiar búsqueda, Mostrar/Ocultar contraseña, Linterna) y las imágenes de las portadas y los personajes tienen descripción para TalkBack, y TalkBack lee los mensajes de error de Búsqueda, Detalle y Escaneo apenas aparecen.
-- **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos: desde el 5.º fallo seguido hay que esperar 30 segundos, y cada fallo más duplica la espera hasta 15 minutos. El bloqueo sigue aunque se cierre la app y se borra al iniciar sesión bien.
+- **Inicio de sesión obligatorio:** con correo y contraseña (Firebase). Al crear la cuenta se elige un nombre de usuario único (de 3 a 20 caracteres: letras a-z, números, `_` o `.`, con al menos una letra o un número) y un medidor muestra qué tan segura es la contraseña. Incluye recuperar la contraseña por correo y un límite de intentos fallidos: desde el 5.º fallo seguido hay que esperar 30 segundos, y cada fallo más duplica la espera hasta 15 minutos. El bloqueo sigue aunque se cierre la app y se borra al iniciar sesión bien.
 - **Perfil:** pestaña con el correo de la cuenta y el botón para cerrar sesión (con confirmación).
 - **Aviso al terminar una búsqueda lenta:** si sales de la app mientras busca un ISBN-13 en la web o una portada con la IA, al terminar baja un aviso flotante (heads-up). Con un resultado dice "Encontramos tu cómic" y tocarlo abre su detalle; con varios dice "Encontramos varios cómics" y tocarlo abre la app en la lista. Con un error o con la app a la vista no avisa, y el aviso se borra al volver a la app.
 - **Enlace al detalle:** `heroscan://detalle/{id}/{tipo}` abre el detalle de un cómic (lo usa el aviso). Solo funciona con la sesión iniciada; sin sesión se abre Acceso.
@@ -46,6 +46,7 @@ Proyecto universitario individual. Se construye por fases a lo largo del semestr
 | Notificaciones | `NotificationChannel`, `NotificationCompat`, `PendingIntent` (`FLAG_IMMUTABLE`), enlace profundo con `navDeepLink` |
 | Cuentas y datos | Firebase Authentication, Cloud Firestore (Firebase BoM 34.19.0) |
 | APIs externas | [Metron](https://metron.cloud) (información de cómics), [MyMemory](https://mymemory.translated.net) (traducción), [Gemini](https://ai.google.dev) (reconocimiento de portadas y de los resultados de la búsqueda web), [Tavily](https://tavily.com) (búsqueda web de ISBN) |
+| Versión release | R8 (`optimization` de AGP) con reglas propias en `app/src/main/keepRules/rules.keep` |
 
 ## Arquitectura
 
@@ -99,6 +100,15 @@ com.example.heroscan
 > Si "Buscar por portada" muestra **"Falta configurar la clave de Gemini"**, falta `GEMINI_API_KEY`. El resto de la app funciona sin ella.
 > Si un ISBN-13 muestra **"Falta configurar la clave de Tavily"**, falta `TAVILY_API_KEY`. El resto de la app funciona sin ella. Para buscar un ISBN también hacen falta `METRON_TOKEN` y `GEMINI_API_KEY`: la app revisa las tres antes de buscar en la web, así no se gasta una búsqueda si falta alguna.
 
+### Versión release
+
+La versión release usa R8 para quitar el código y los recursos que no se usan (el APK pasó de 41,6 MB a 25,4 MB). Como la app no se publica, se firma con la clave de debug de Android Studio, así que se instala encima de la versión debug:
+```
+gradlew.bat assembleRelease
+adb install -r app\build\outputs\apk\release\app-release.apk
+```
+Las reglas propias de R8 están en `app/src/main/keepRules/rules.keep`: los DTO que lee Gson y el enum `TipoCodigo` de la ruta del detalle.
+
 ## Configurar Firebase (inicio de sesión)
 
 La app usa Firebase para las cuentas. El archivo `app/google-services.json` no está en el repositorio, así que cada persona que clone el proyecto tiene que crear su propio proyecto de Firebase. Hazlo antes del paso 6 de "Cómo correr el proyecto".
@@ -142,8 +152,8 @@ Qué se guarda en Firestore:
 
 ## Pruebas unitarias
 
-163 pruebas JUnit 4 en `app/src/test` (162 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, títulos para Metron (normalizar y búsquedas en orden), validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
-Las reglas con muchos casos se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por caso): los mensajes de error (una fila por código HTTP), el clasificador de códigos (escritos y escaneados), el nombre de usuario y el estado del permiso de notificaciones. Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente). Después, cada tabla nueva se comprobó igual: 8 mutaciones más, todas detectadas.
+169 pruebas JUnit 4 en `app/src/test` (168 de la lógica que no depende de Android y 1 de la plantilla de Android Studio): clasificador de códigos, texto de la búsqueda web para la IA, títulos para Metron (normalizar y búsquedas en orden), validación de la cuenta, medidor de contraseña, límite de intentos, mensajes de error de Metron, Gemini y Tavily, el estado del permiso de notificaciones, y el bloqueo del escáner. No necesitan celular ni internet.
+Las reglas con muchos casos se prueban con tablas de casos (`@RunWith(Parameterized::class)`: una fila por caso): los mensajes de error (una fila por código HTTP), el clasificador de códigos (escritos y escaneados), el nombre de usuario y el estado del permiso de notificaciones. Para medir si las pruebas sirven se hizo una caza de errores a mano: se rompió el código 10 veces, una por vez, y las pruebas detectaron 9; la otra no cambia ningún resultado (mutante equivalente). Después, cada tabla nueva se comprobó igual: 10 mutaciones más, todas detectadas.
 
 La app limpia la respuesta de la IA cuando viene envuelta en cercas de código (` ```json … ``` `) antes de leer el JSON: lo hace `quitarCercas` en `util/RespuestaIa.kt`, que tiene su propia tabla de 7 pruebas.
 
@@ -154,6 +164,15 @@ Se corren desde Android Studio (clic derecho en la carpeta `test` → **Run Test
 gradlew.bat testDebugUnitTest
 ```
 (en macOS/Linux: `./gradlew testDebugUnitTest`).
+
+## Qué se verificó y qué no
+
+- **Pruebas automáticas:** 169 pruebas unitarias en verde, con tablas de casos y caza de errores a mano (ver "Pruebas unitarias"). No hay pruebas automáticas de pantalla ni instrumentadas: las pruebas funcionales se hicieron a mano.
+- **Pruebas funcionales a mano en el celular:** un protocolo de 12 experimentos con los flujos principales de la app, 12 de 12 correctos.
+- **Pruebas a mano en el emulador (Pixel 8, API 37):** cada fase de cambios se probó con una tabla de esperado y observado. La versión release con R8 se recorrió completa: abrir la app e iniciar sesión, escáner, búsqueda por título, detalle con traducción y personajes, girar la pantalla, ISBN por la web, el aviso y su enlace al detalle, buscar por portada y Perfil.
+- **Lo que no se pudo comprobar en el emulador:** escanear un código real (la cámara del emulador no tiene un cómic que leer) y el gesto de agitar; eso se probó en el celular. Tampoco se probaron ISBN-10 ni grapas con EAN, porque la app todavía no los soporta.
+- **Observado y no resuelto:** en el emulador, a veces la primera búsqueda lenta con la app fuera de la vista da "Problema de conexión"; con REINTENTAR funciona. En el celular no pasó.
+- **Dejado a propósito:** no hay una espera visible después de "Demasiadas búsquedas seguidas" (el mensaje ya pide esperar un minuto); un enlace con la app ya abierta se ignora; no se usa WorkManager; el release se firma con la clave de debug porque la app no se publica. Más detalles en "Limitaciones conocidas".
 
 ## Limitaciones conocidas
 
@@ -187,7 +206,7 @@ Medidas aplicadas siguiendo las guías de clase "Autenticación y seguridad con 
 - **Aviso de la IA en Portada:** debajo de "SUBE LA IMAGEN" se avisa que la IA puede equivocarse y que no se suban fotos con datos personales, porque en la capa gratuita de Gemini Google puede usar lo que se envía.
 - **Avisos seguros:** el intent del aviso usa `FLAG_IMMUTABLE` (otra app no puede cambiarlo) y el aviso no muestra datos de la cuenta, solo el título del cómic.
 
-**Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN`, `GEMINI_API_KEY` y `TAVILY_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. En una app publicada se resolvería así (no está implementado en este proyecto):
+**Limitación conocida: las claves quedan dentro del APK.** `METRON_TOKEN`, `GEMINI_API_KEY` y `TAVILY_API_KEY` se leen de `local.properties` al compilar y quedan guardadas dentro del APK. `local.properties` solo evita que lleguen a git: cualquiera que tenga el APK puede extraerlas. R8 (en la versión release) acorta los nombres del código, pero no oculta estas claves. En una app publicada se resolvería así (no está implementado en este proyecto):
 
 - Metron: un servidor intermediario que guarde el token y haga las consultas por la app.
 - Gemini: Firebase AI Logic con App Check, para llamar al modelo sin poner la clave en la app.
@@ -195,7 +214,7 @@ Medidas aplicadas siguiendo las guías de clase "Autenticación y seguridad con 
 
 **Sobre `google-services.json`:** identifica el proyecto de Firebase; no es una clave secreta. La protección de los datos está en las reglas de Firestore (ver "Configurar Firebase"). Igual se mantiene fuera de git, porque cada quien usa su propio proyecto.
 
-## Próximas fases
+## Trabajo futuro
 
 - Soporte para ISBN-10 y para las grapas con EAN de ediciones en español que Metron no tiene.
 - Funciones de colección personal.
