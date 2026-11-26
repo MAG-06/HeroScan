@@ -75,7 +75,6 @@ fun PantallaEscaneo(
 ) {
     val uiState by escaneoViewModel.uiState.collectAsStateWithLifecycle()
     val codigoDetectado by escaneoViewModel.codigoDetectado.collectAsStateWithLifecycle()
-    val tipoCodigoDetectado by escaneoViewModel.tipoCodigoDetectado.collectAsStateWithLifecycle()
     val linternaEncendida by escaneoViewModel.linternaEncendida.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val estadoSnackbar = remember { SnackbarHostState() }
@@ -125,7 +124,6 @@ fun PantallaEscaneo(
     ContenidoEscaneo(
         uiState = uiState,
         codigoDetectado = codigoDetectado,
-        tipoDetectado = tipoCodigoDetectado?.etiqueta,
         linternaEncendida = linternaEncendida,
         areaCamara = { modificador -> AreaCamara(viewModel = escaneoViewModel, modifier = modificador) },
         estadoSnackbar = estadoSnackbar,
@@ -140,7 +138,6 @@ fun PantallaEscaneo(
 private fun ContenidoEscaneo(
     uiState: EscaneoUiState,
     codigoDetectado: String?,
-    tipoDetectado: String?,
     linternaEncendida: Boolean,
     areaCamara: @Composable (Modifier) -> Unit,
     estadoSnackbar: SnackbarHostState = remember { SnackbarHostState() },
@@ -223,7 +220,6 @@ private fun ContenidoEscaneo(
                     else -> {
                         ContenidoInferiorEscaneo(
                             codigoDetectado = codigoDetectado,
-                            tipoDetectado = tipoDetectado,
                             linternaEncendida = linternaEncendida,
                             alPulsarLinterna = alPulsarLinterna
                         )
@@ -307,7 +303,6 @@ private fun iniciarCamara(
 @Composable
 private fun ContenidoInferiorEscaneo(
     codigoDetectado: String?,
-    tipoDetectado: String?,
     linternaEncendida: Boolean,
     alPulsarLinterna: () -> Unit
 ) {
@@ -373,7 +368,6 @@ private fun PreviewEscaneoApuntaAlCodigo() {
         ContenidoEscaneo(
             uiState = EscaneoUiState.Escaneando,
             codigoDetectado = null,
-            tipoDetectado = null,
             linternaEncendida = false,
             areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
         )
@@ -388,7 +382,6 @@ private fun PreviewEscaneoBuscando() {
         ContenidoEscaneo(
             uiState = EscaneoUiState.Buscando,
             codigoDetectado = null,
-            tipoDetectado = null,
             linternaEncendida = false,
             areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
         )
@@ -403,7 +396,6 @@ private fun PreviewEscaneoBuscandoEnLaWeb() {
         ContenidoEscaneo(
             uiState = EscaneoUiState.BuscandoEnLaWeb,
             codigoDetectado = null,
-            tipoDetectado = null,
             linternaEncendida = false,
             areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
         )
@@ -418,7 +410,6 @@ private fun PreviewEscaneoErrorNoEncontrado() {
         ContenidoEscaneo(
             uiState = EscaneoUiState.Error("No se encontró ningún cómic con ese código"),
             codigoDetectado = null,
-            tipoDetectado = null,
             linternaEncendida = false,
             areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
         )
@@ -433,7 +424,6 @@ private fun PreviewEscaneoErrorSinConexion() {
         ContenidoEscaneo(
             uiState = EscaneoUiState.Error("No hay conexión o el servidor tardó demasiado. Intenta de nuevo.", sinConexion = true),
             codigoDetectado = null,
-            tipoDetectado = null,
             linternaEncendida = false,
             areaCamara = { modificador -> AreaCamaraEjemplo(modificador) }
         )

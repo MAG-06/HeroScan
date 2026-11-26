@@ -5,8 +5,11 @@ import android.util.Patterns
 // Funciones para revisar el formato del nombre de usuario, el correo y la contraseña antes de llamar a Firebase.
 // Las funciones validar… devuelven null si el dato es válido, o el mensaje de error si no lo es.
 
-// Nombre de usuario: de 3 a 20 caracteres, solo letras a-z, números, "_" y ".".
+// Nombre de usuario: de 3 a 20 caracteres, solo letras a-z, números, "_" y ".", y al menos una letra o un número (no sirve "..." ni "___").
 private val FORMATO_NOMBRE_USUARIO = Regex("^[a-z0-9_.]{3,20}$")
+
+// Busca al menos una letra a-z o un número en el nombre.
+private val TIENE_LETRA_O_NUMERO = Regex("[a-z0-9]")
 
 // Largo mínimo de la contraseña (el mismo que exige la consola de Firebase).
 // También la usa EvaluadorClave para que el largo mínimo exista en un solo lugar.
@@ -22,7 +25,7 @@ fun normalizarNombreUsuario(nombreUsuario: String): String {
 
 // Revisa que el nombre de usuario (ya normalizado) cumpla el formato.
 fun validarNombreUsuario(nombreUsuario: String): String? {
-    if (!FORMATO_NOMBRE_USUARIO.matches(nombreUsuario)) {
+    if (!FORMATO_NOMBRE_USUARIO.matches(nombreUsuario) || !TIENE_LETRA_O_NUMERO.containsMatchIn(nombreUsuario)) {
         return "El nombre de usuario debe tener de 3 a 20 caracteres: letras, números, _ o ."
     }
     return null

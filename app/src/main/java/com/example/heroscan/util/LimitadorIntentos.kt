@@ -57,9 +57,9 @@ class LimitadorIntentos(private val reloj: () -> Long = System::currentTimeMilli
         return restantes
     }
 
-    // Pone los fallos y la hora del bloqueo que se habían guardado (al volver a abrir la app). La espera nunca pasa de 15 minutos, por si el reloj del teléfono se atrasó.
+    // Pone los fallos y la hora del bloqueo que se habían guardado (al volver a abrir la app). La espera nunca pasa de 15 minutos, por si el reloj del teléfono se atrasó. Los fallos negativos se toman como 0.
     fun restaurar(fallos: Int, hastaMs: Long) {
-        fallosSeguidos = fallos
+        fallosSeguidos = maxOf(fallos, 0)
         bloqueadoHastaMs = minOf(hastaMs, reloj() + ESPERA_MAXIMA_MS)
     }
 

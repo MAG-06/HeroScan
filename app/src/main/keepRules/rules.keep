@@ -10,3 +10,9 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# Gson lee y escribe los campos de los DTO por su nombre (no hay @SerializedName): no se renombran ni se quitan.
+-keep class com.example.heroscan.network.dto.** { *; }
+
+# Navigation y el enlace de la notificación buscan el enum de RutaDetalle (y sus valores) por su nombre: no se renombran.
+-keep class com.example.heroscan.model.TipoCodigo { *; }

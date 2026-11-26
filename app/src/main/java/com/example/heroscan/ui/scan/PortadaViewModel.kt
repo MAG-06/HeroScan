@@ -46,10 +46,10 @@ class PortadaViewModel(private val app: Application) : AndroidViewModel(app) {
         _uiState.value = PortadaUiState.Buscando
 
         viewModelScope.launch {
-            var tituloIa = ""
+            var tituloEncontrado = ""
             _uiState.value = try {
                 val resultadoPortada = repositorio.buscarPorPortada(imagenBase64)
-                tituloIa = resultadoPortada.titulo
+                tituloEncontrado = resultadoPortada.titulo
                 when (val resultado = resultadoPortada.resultado) {
                     is ResultadoBusqueda.Unico -> PortadaUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> PortadaUiState.VariosResultados(resultadoPortada.titulo)
@@ -62,16 +62,16 @@ class PortadaViewModel(private val app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 PortadaUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
-            avisarSiNoSeVe(tituloIa)
+            avisarSiNoSeVe(tituloEncontrado)
         }
     }
 
     // Si la búsqueda terminó con la app fuera de la vista, avisa con una notificación (uno o varios). Los errores no avisan.
-    private fun avisarSiNoSeVe(tituloIa: String) {
+    private fun avisarSiNoSeVe(tituloEncontrado: String) {
         if (appVisible) return
         val estado = _uiState.value
         when (estado) {
-            is PortadaUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloIa)
+            is PortadaUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloEncontrado)
             is PortadaUiState.VariosResultados -> avisarVariosComics(app)
             else -> {}
         }

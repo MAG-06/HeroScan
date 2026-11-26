@@ -44,9 +44,6 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
     private val _codigoDetectado = MutableStateFlow<String?>(null)
     val codigoDetectado: StateFlow<String?> = _codigoDetectado
 
-    private val _tipoCodigoDetectado = MutableStateFlow<TipoCodigo?>(null)
-    val tipoCodigoDetectado: StateFlow<TipoCodigo?> = _tipoCodigoDetectado
-
     private val _linternaEncendida = MutableStateFlow<Boolean>(false)
     val linternaEncendida: StateFlow<Boolean> = _linternaEncendida
 
@@ -99,7 +96,7 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     // Analiza un frame de la cámara con ML Kit. Si encuentra un código nuevo mientras se está escaneando,
-    // guarda su valor y su tipo, y lanza la búsqueda del cómic.
+    // guarda su valor y lanza la búsqueda del cómic.
     @androidx.annotation.OptIn(ExperimentalGetImage::class)
     fun analizarFrame(imageProxy: ImageProxy) {
         val imagenCamara = imageProxy.image
@@ -124,7 +121,6 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
                     ) {
                         val tipo = clasificarCodigoEscaneado(valor, formato)
                         _codigoDetectado.value = valor
-                        _tipoCodigoDetectado.value = tipo
                         buscarComic(valor, tipo)
                     }
                 }
@@ -167,10 +163,10 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
         _uiState.value = EscaneoUiState.BuscandoEnLaWeb
 
         viewModelScope.launch {
-            var tituloIa = ""
+            var tituloEncontrado = ""
             _uiState.value = try {
                 val resultadoWeb = repositorio.buscarCodigoEnLaWeb(codigo)
-                tituloIa = resultadoWeb.titulo
+                tituloEncontrado = resultadoWeb.titulo
                 when (val resultado = resultadoWeb.resultado) {
                     is ResultadoBusqueda.Unico -> EscaneoUiState.Encontrado(resultado.idComic, resultado.tipoCodigo)
                     is ResultadoBusqueda.Varios -> EscaneoUiState.VariosPorTitulo(resultadoWeb.titulo)
@@ -183,16 +179,16 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 EscaneoUiState.Error(e.message ?: MENSAJE_ERROR_DESCONOCIDO)
             }
-            avisarSiNoSeVe(tituloIa)
+            avisarSiNoSeVe(tituloEncontrado)
         }
     }
 
     // Si la búsqueda en la web terminó con la app fuera de la vista, avisa con una notificación (uno o varios). Los errores no avisan.
-    private fun avisarSiNoSeVe(tituloIa: String) {
+    private fun avisarSiNoSeVe(tituloEncontrado: String) {
         if (appVisible) return
         val estado = _uiState.value
         when (estado) {
-            is EscaneoUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloIa)
+            is EscaneoUiState.Encontrado -> avisarComicEncontrado(app, estado.idComic, estado.tipoCodigo, tituloEncontrado)
             is EscaneoUiState.VariosPorTitulo -> avisarVariosComics(app)
             else -> {}
         }
@@ -203,7 +199,6 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
     fun prepararNuevoEscaneo() {
         bloqueo = BloqueoCodigo(_codigoDetectado.value, 0)
         _codigoDetectado.value = null
-        _tipoCodigoDetectado.value = null
         _uiState.value = EscaneoUiState.Escaneando
         quitarAvisos(app)
     }
@@ -213,7 +208,6 @@ class EscaneoViewModel(private val app: Application) : AndroidViewModel(app) {
     fun reintentar() {
         bloqueo = BloqueoCodigo(null, 0)
         _codigoDetectado.value = null
-        _tipoCodigoDetectado.value = null
         _uiState.value = EscaneoUiState.Escaneando
     }
 

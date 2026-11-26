@@ -40,8 +40,10 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
             }
+            // La app no se publica: el release se firma con la clave de debug para poder instalarlo en el emulador.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

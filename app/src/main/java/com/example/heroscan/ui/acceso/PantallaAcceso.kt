@@ -727,8 +727,8 @@ private fun DialogoRecuperacion(
     alCerrar: () -> Unit,
     alEnviar: (String) -> Unit
 ) {
-    // remember guarda el correo mientras el diálogo está abierto; al cerrarlo y abrirlo vuelve a empezar con correoInicial.
-    var correoRecuperacion by remember { mutableStateOf(correoInicial) }
+    // rememberSaveable guarda el correo mientras el diálogo está abierto, también al girar el celular; al cerrarlo y abrirlo vuelve a empezar con correoInicial.
+    var correoRecuperacion by rememberSaveable { mutableStateOf(correoInicial) }
     val enviando = estado is RecuperacionUiState.Enviando
     val enviado = estado is RecuperacionUiState.Enviado
 

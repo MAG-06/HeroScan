@@ -33,10 +33,10 @@ private fun crearCanalAvisos(contexto: Context) {
     }
 }
 
-// Avisa que la búsqueda encontró un cómic. El texto es el título que reconoció la IA (o "Toca para ver el detalle" si viene vacío).
+// Avisa que la búsqueda encontró un cómic. El texto es el título con el que Metron encontró el cómic (o "Toca para ver el detalle" si viene vacío).
 // Tocarlo abre el detalle con el enlace heroscan://detalle/{idComic}/{tipoCodigo}, en una tarea nueva (NEW_TASK + CLEAR_TASK).
-fun avisarComicEncontrado(contexto: Context, idComic: Int, tipoCodigo: TipoCodigo, tituloIa: String) {
-    val texto = if (tituloIa.isBlank()) "Toca para ver el detalle" else tituloIa
+fun avisarComicEncontrado(contexto: Context, idComic: Int, tipoCodigo: TipoCodigo, tituloEncontrado: String) {
+    val texto = if (tituloEncontrado.isBlank()) "Toca para ver el detalle" else tituloEncontrado
     val enlace = Uri.parse("heroscan://detalle/$idComic/${tipoCodigo.name}")
     val intent = Intent(Intent.ACTION_VIEW, enlace, contexto, MainActivity::class.java)
     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
